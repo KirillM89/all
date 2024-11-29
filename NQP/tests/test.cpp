@@ -408,8 +408,14 @@ TEST_P(TestLDLParametrized, Utils_TestAddCGtR) {
 	TestAdd(-100.0, 100.0, false); // n cols >= n rows
 }
 
-INSTANTIATE_TEST_CASE_P(SUITE_1, TestLDLParametrized, ::testing::Range(1UL, 10UL, 1UL));
-INSTANTIATE_TEST_CASE_P(SUITE_2, TestLDLParametrized, ::testing::Range(10UL, 100UL, 10UL));
+constexpr std::size_t n1Bg = 1;
+constexpr std::size_t n1End = 10;
+constexpr std::size_t n1step = 1;
+constexpr std::size_t n2Bg = 10;
+constexpr std::size_t n2End = 100;
+constexpr std::size_t n2step = 10;
+INSTANTIATE_TEST_CASE_P(SUITE_1, TestLDLParametrized, ::testing::Range(n1Bg, n1End, n1step));
+INSTANTIATE_TEST_CASE_P(SUITE_2, TestLDLParametrized, ::testing::Range(n2Bg, n2End, n2step));
 
 TEST(Utils_SolveMMTb, Dummy) {
 	matrix_t M = { {-5.0} };
