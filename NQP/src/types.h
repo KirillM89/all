@@ -53,6 +53,16 @@ enum class GammaUpdateStrategyDual {
 	INCREMENT_BY_S_COMPONENT,
 };
 
+struct CoreSettings {
+
+};
+
+struct Settings {
+    bool checkCoreSettings = false;
+    CoreSettings coreSettings;
+};
+
+
 struct UserSettings {
 	ProblemConfiguration configuration = ProblemConfiguration::DENSE;
 	DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
@@ -106,7 +116,7 @@ enum class DualLoopExitStatus {
 };
 
 enum class PrimalLoopExitStatus {
-	EMPTY_ACTIVE_SET,
+    EMPTY_ACTIVE_SET = 0,
 	ALL_PRIMAL_POSITIVE,
 	ITERATIONS,
 	EMPTY_ACTIVE_SET_ON_ZERO_ITERATION,
@@ -122,7 +132,14 @@ enum class SolverExitStatus {
 	UNKNOWN
 };
 
+enum class PreprocStatus {
+    SUCCESS = 0,
+    INVALID_SETTINGS,
+    INIT_FAILED
+};
+
 struct SolverOutput {
+    PreprocStatus preprocStatus = PreprocStatus::SUCCESS;
 	DualLoopExitStatus dualExitStatus = DualLoopExitStatus::UNKNOWN;
 	PrimalLoopExitStatus primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
 	int nDualIterations;

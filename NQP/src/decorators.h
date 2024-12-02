@@ -54,7 +54,7 @@ namespace QP_NNLS {
     class Core;
     class QPNNLS {
     public:
-        void Init(const UserSettings& settings);
+        void Init(const Settings& settings);
         void setObservers(std::shared_ptr<Observer> initObs,
                           std::shared_ptr<Observer> iterObs,
                           std::shared_ptr<Observer> finalObs);
@@ -62,12 +62,14 @@ namespace QP_NNLS {
     protected:
         QPNNLS();
          ~QPNNLS() = default;
-        QPNNLS(const QPNNLS& other);
-        QPNNLS(QPNNLS&& other);
-        OPNNLS& operator=(const QPNNLS& other);
-        QPNNLS& operator=(QPNNLS&& other);
-
+        QPNNLS(const QPNNLS& other) = delete;
+        QPNNLS(QPNNLS&& other) = delete;
+        QPNNLS& operator=(const QPNNLS& other) = delete;
+        QPNNLS& operator=(QPNNLS&& other) = delete;
+        bool VerifySettings(const Settings& settings);
+        SolverOutput output;
         std::unique_ptr<Core> core;
+        bool isInitialized = false;
     };
 
     class QPNNLSDense : public QPNNLS {
@@ -78,7 +80,7 @@ namespace QP_NNLS {
     class QPNNLSSparse : public QPNNLS {
     public:
         void Solve(const SparseQPProblem& problem);
-    }
+    };
 
 }
 

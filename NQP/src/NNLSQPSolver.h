@@ -19,6 +19,17 @@ struct NNLSQPResults {
 
 class iDBScaler;
 
+class Core {
+public:
+    void Set(const CoreSettings& settings) {};
+    void ResetProblem() {};
+    void SetObservers(std::shared_ptr<Observer> initObs,
+                      std::shared_ptr<Observer> iterObs,
+                      std::shared_ptr<Observer> finalObs) {}
+    bool InitProblem(const DenseQPProblem& problem) { return true;}
+    void Solve() {}
+    const SolverOutput& getOutput() { return SolverOutput(); }
+};
 
 class NNLSQPSolver
 {
