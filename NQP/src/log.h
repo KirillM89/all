@@ -64,5 +64,7 @@ namespace QP_NNLS {
 		std::string logFile;
 		void ToNewLine();
 	};
+
+
 }
 #endif

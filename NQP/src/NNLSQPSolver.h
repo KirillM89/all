@@ -18,6 +18,7 @@ struct NNLSQPResults {
 
 class iDBScaler;
 
+
 class NNLSQPSolver
 {
 public:
