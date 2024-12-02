@@ -6,6 +6,7 @@
 #include "log.h"
 #include "timers.h"
 #include "utils.h"
+#include "decorators.h"
 #ifndef NNLS_QP_SOLVER_H
 #define NNLS_QP_SOLVER_H
 
@@ -37,6 +38,9 @@ public:
 
 	NNLSQPSolver();
 	virtual ~NNLSQPSolver() = default;
+    void setObservers(std::shared_ptr<Observer> initObs,
+                      std::shared_ptr<Observer> iterObs,
+                      std::shared_ptr<Observer> finalObs);
 	bool Init(const ProblemSettings& settings);
 	void Solve();
 	const matrix_t& getChol() { return cholFactor;}
@@ -99,6 +103,9 @@ private:
 	double dualTolerance = 0;
 	std::vector<int> singularConstraints;
 	std::unordered_set<int> lastIndices;
+    std::shared_ptr<Observer> initObs;
+    std::shared_ptr<Observer> iterObs;
+    std::shared_ptr<Observer> finalObs;
 	void setUserSettings(const UserSettings& settings);
 	void initWorkSpace();
 	void computeDualVariable(); 

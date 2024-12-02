@@ -2,6 +2,7 @@
 #define QP_NNLS_DECORATORS_H
 #include <memory>
 #include <vector>
+#include "types.h"
 namespace QP_NNLS {
     struct IterationData {
 
@@ -49,6 +50,36 @@ namespace QP_NNLS {
     private:
         void getData(FinalData& data);
     };
+
+    class Core;
+    class QPNNLS {
+    public:
+        void Init(const UserSettings& settings);
+        void setObservers(std::shared_ptr<Observer> initObs,
+                          std::shared_ptr<Observer> iterObs,
+                          std::shared_ptr<Observer> finalObs);
+        const SolverOutput& getOutput();
+    protected:
+        QPNNLS();
+         ~QPNNLS() = default;
+        QPNNLS(const QPNNLS& other);
+        QPNNLS(QPNNLS&& other);
+        OPNNLS& operator=(const QPNNLS& other);
+        QPNNLS& operator=(QPNNLS&& other);
+
+        std::unique_ptr<Core> core;
+    };
+
+    class QPNNLSDense : public QPNNLS {
+    public:
+        void Solve(const DenseQPProblem& problem);
+    };
+
+    class QPNNLSSparse : public QPNNLS {
+    public:
+        void Solve(const SparseQPProblem& problem);
+    }
+
 }
 
 #endif // DECORATORS_H
