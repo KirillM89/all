@@ -1157,7 +1157,7 @@ namespace QP_NNLS {
 					const double unscaledTol = solverSettings.origFeasibilityTol; 
 				    double scaleCoef = maxBalanceFactor / balanceFactor_1;
 
-					while (unscaledTol * scaleCoef < 1.0e-14 ) {
+                    while (unscaledTol * scaleCoef < 1.0e-14 || minSComponent * scaleCoef < 1.0e-7 ) {
 						scaleCoef *= 10.0;
 					}
 					const_cast<double&>(solverSettings.origFeasibilityTol) = unscaledTol * scaleCoef; 
@@ -1183,9 +1183,6 @@ namespace QP_NNLS {
 			}
 			double mBalanceFactor = maxEl / minEl;
 			double sBalanceFactor = maxSComponent / minSComponent;
-
-			
-
 		}
 	}
 

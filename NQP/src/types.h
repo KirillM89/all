@@ -59,7 +59,7 @@ struct UserSettings {
 	CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
 	int nDualIterations = 100;
 	int nPrimalIterations = 100;
-	int logLevel = 0; 
+    int logLevel = 3;
 	double nnlsResidNormFsb = 1.0e-16;
 	double origPrimalFsb = 1.0e-6;
 	double nnlsPrimalZero = -1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero

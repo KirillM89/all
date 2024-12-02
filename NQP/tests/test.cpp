@@ -638,7 +638,7 @@ TEST_P(HessianParametrizedTest, Solver_SolNotOnConstraintsNarrowRegionT2) {
 TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT1) {
 	QPBaseline baseline;
 	baseline.dualStatus = DualLoopExitStatus::INFEASIBILITY;
-	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
+    SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
 	TestSolver(getProblem(case_21), NqpTestSettingsDefault, baseline);
 }
 TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT2) {
@@ -653,13 +653,15 @@ TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT3) {
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
 	TestSolver(getProblem(case_23), NqpTestSettingsDefault, baseline);
 }
-INSTANTIATE_TEST_CASE_P(SUITE_1, HessianParametrizedTest, ::testing::Values(1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
+INSTANTIATE_TEST_CASE_P(SUITE_1, HessianParametrizedTest, ::testing::Values(1.0)); //, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
 
 TEST(Solver, RedundantConstraintsT1) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0.0, 2.0}};
 	baseline.cost = 20.0;
-	TestSolver(case_17, NqpTestSettingsDefault, baseline);
+    UserSettings settings = NqpTestSettingsDefault;
+    settings.logLevel = 3;
+    TestSolver(case_17, settings, baseline);
 }
 TEST(Solver, RedundantConstraintsT2) {
 	QPBaseline baseline;

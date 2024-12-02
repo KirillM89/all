@@ -9,5 +9,4 @@
 !/NQP/tests/CMakeLists.txt
 !/NQP/tests/*.h
 !/NQP/tests/*.cpp
-!/NQP/tests/*.h
 !.gitignore
