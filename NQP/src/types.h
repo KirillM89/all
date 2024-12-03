@@ -7,6 +7,7 @@
 #define NNLS_QP_SOLVER_TYPES_H
 namespace QP_NNLS {
 using matrix_t = std::vector<std::vector<double>>;
+using unsg_t = unsigned int;
 namespace CONSTANTS {
 	constexpr double cholFactorZero = 1.0e-14;
 	constexpr double pivotZero = 1.0e-14;
@@ -53,8 +54,20 @@ enum class GammaUpdateStrategyDual {
 	INCREMENT_BY_S_COMPONENT,
 };
 
-struct CoreSettings {
+enum class InitStageStatus {
+    SUCCESS = 0,
+    CHOLETSKY
+};
 
+struct CoreSettings {
+    DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
+    CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
+    unsg_t nDualIterations = 100;
+    unsg_t nPrimalIterations = 100;
+    double nnlsResidNormFsb = 1.0e-16;
+    double origPrimalFsb = 1.0e-6;
+    double nnlsPrimalZero = -1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero
+    double minNNLSDualTol = -1.0e-12;
 };
 
 struct Settings {
@@ -90,6 +103,7 @@ struct DenseQPProblem {
 	std::vector<double> g;
 	std::vector<double> up;
 	std::vector<double> lw;
+    unsg_t nEqConstraints;
 };
 
 struct SparseQPProblem {

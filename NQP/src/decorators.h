@@ -13,52 +13,37 @@ namespace QP_NNLS {
     };
 
     struct InitializationData {
-
+        double dbSacleFactor;
+        std::string tChol;
+        std::string tInv;
+        std::string tM;
+        std::vector<double> s;
+        std::vector<double> b;
+        std::vector<double> c;
+        matrix_t Chol;
+        matrix_t CholInv;
+        matrix_t M;
+        InitStageStatus InitStatus;
     };
 
-    class Observer {
+    class Callback {
     public:
-        Observer() = default;
-        virtual ~Observer() = default;
+        Callback() = default;
+        virtual ~Callback() = default;
         virtual void processData() {
             return;
-        }
-    };
-
-    class SolverCallback {
-    public:
-        SolverCallback() = default;
-        virtual ~SolverCallback() = default;
-        void setObserver(std::shared_ptr<Observer> observer) {
-            this->observer = observer;
-        }
-    protected:
-        std::shared_ptr<Observer> observer = nullptr;
-    };
-
-    class InitializationCallback {
-    private:
-        void getData(InitializationData& data);
-    };
-
-    class IterationCallback final: public SolverCallback {
-    private:
-        void getData(IterationData& data);
-    };
-
-    class FinalCallback final: public SolverCallback {
-    private:
-        void getData(FinalData& data);
+        };
+        InitializationData initData;
+        IterationData iterData;
+        FinalData finalData;
     };
 
     class Core;
     class QPNNLS {
     public:
         void Init(const Settings& settings);
-        void setObservers(std::shared_ptr<Observer> initObs,
-                          std::shared_ptr<Observer> iterObs,
-                          std::shared_ptr<Observer> finalObs);
-        const SolverOutput& getOutput();
+        void SetCallback(std::shared_ptr<Callback> callback);
+        const SolverOutput& GetOutput();
     protected:
         QPNNLS();
          ~QPNNLS() = default;

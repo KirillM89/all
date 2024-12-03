@@ -20,15 +20,54 @@ struct NNLSQPResults {
 class iDBScaler;
 
 class Core {
+    struct WorkSpace {
+        WorkSpace() {
+            Clear();
+        }
+        std::vector<double> s;
+        std::vector<double> zp;
+        std::vector<double> primal;
+        std::vector<double> dual;
+        std::vector<double> lambda;
+        std::vector<double> MTY;
+        std::vector<double> x;
+        std::vector<double> c;
+        std::vector<double> b;
+        std::vector<double> v;
+        std::vector<double> slack;
+        std::vector<int> pmt;
+        std::unordered_set<unsigned int> activeConstraints;
+        std::unordered_set<unsigned int> negativeZp;
+        matrix_t H;
+        matrix_t M;
+        matrix_t Jac;
+        matrix_t Chol;
+        matrix_t CholInv;
+        void Clear();
+    };
+
 public:
-    void Set(const CoreSettings& settings) {};
-    void ResetProblem() {};
-    void SetObservers(std::shared_ptr<Observer> initObs,
-                      std::shared_ptr<Observer> iterObs,
-                      std::shared_ptr<Observer> finalObs) {}
-    bool InitProblem(const DenseQPProblem& problem) { return true;}
+    Core() {}
+    void Set(const CoreSettings& settings);
+    void ResetProblem();
+    void SetCallback(std::shared_ptr<Callback> callback);
+    bool InitProblem(const DenseQPProblem& problem);
     void Solve() {}
-    const SolverOutput& getOutput() { return SolverOutput(); }
+    const SolverOutput& GetOutput() { return SolverOutput(); }
+private:
+    unsg_t nVariables;
+    unsg_t nConstraints;
+    unsg_t nEqConstraints;
+    double scaleFactorDB;
+    CoreSettings settings;
+    WorkSpace ws;
+    std::unique_ptr<iDBScaler> dbScaler;
+    std::unique_ptr<iTimer> timer;
+    std::shared_ptr<Callback> uCallback;
+    bool PrepareNNLS(const DenseQPProblem& problem);
+    void TimePoint(std::string& buf);
+    void ScaleD();
+
 };
 
 class NNLSQPSolver
@@ -49,9 +88,6 @@ public:
 
 	NNLSQPSolver();
 	virtual ~NNLSQPSolver() = default;
-    void setObservers(std::shared_ptr<Observer> initObs,
-                      std::shared_ptr<Observer> iterObs,
-                      std::shared_ptr<Observer> finalObs);
 	bool Init(const ProblemSettings& settings);
 	void Solve();
 	const matrix_t& getChol() { return cholFactor;}
@@ -114,9 +150,6 @@ private:
 	double dualTolerance = 0;
 	std::vector<int> singularConstraints;
 	std::unordered_set<int> lastIndices;
-    std::shared_ptr<Observer> initObs;
-    std::shared_ptr<Observer> iterObs;
-    std::shared_ptr<Observer> finalObs;
 	void setUserSettings(const UserSettings& settings);
 	void initWorkSpace();
 	void computeDualVariable(); 
