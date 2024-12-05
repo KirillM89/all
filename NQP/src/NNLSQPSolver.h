@@ -44,7 +44,7 @@ class Core {
         matrix_t Jac;
         matrix_t Chol;
         matrix_t CholInv;
-        std::queue<unsg_t> addHistory;
+        std::deque<unsg_t> addHistory;
         void Clear();
     };
 
@@ -85,6 +85,7 @@ private:
     bool FullActiveSet();
     bool SkipCandidate(unsg_t indx);
     bool MakeLineSearch();
+    bool IsCandidateForNewActive(unsg_t index, double& toCompare);
     void TimePoint(std::string& buf);
     void ScaleD();
     void ComputeDualVariable();
@@ -92,7 +93,7 @@ private:
     void AddToActiveSet(unsg_t indx);
     void RmvFromActiveSet(unsg_t indx);
     void ResetPrimal();
-    unsg_t SelectNewActiveComponent();
+    unsg_t SelectNewActiveComponent() const;
     unsg_t SolvePrimal();
     int UpdatePrimal();
 };

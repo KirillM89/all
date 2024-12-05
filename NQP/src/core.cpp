@@ -143,44 +143,63 @@ void Core::ComputeDualVariable() {
 }
 
 bool Core::SkipCandidate(unsg_t indx) {
-
+    return !(std::find(ws.addHistory.begin(), ws.addHistory.end(), indx) == ws.addHistory.end());
 }
 void Core::AddToActiveSet(unsg_t indx) {
-
+    ws.activeConstraints.insert(indx);
+    ws.addHistory.pop_front();
+    ws.addHistory.push_back(indx);
 }
 void Core::RmvFromActiveSet(unsg_t indx) {
-
+    ws.activeConstraints.erase(indx);
 }
 void Core::ResetPrimal(){
 
 }
-unsg_t Core::SelectNewActiveComponent() {
+bool Core::IsCandidateForNewActive(unsg_t index, double toCompare) {
+    bool res = false;
+    const double dl = ws.dual[indx];
+    if (!SkipCandidate(index) && (dl < dualTolerance && dl < toCompare)) {
+        newActiveIndex = i;
+        res = true;
+    }
+    return res;
+}
+unsg_t Core::SelectNewActiveComponent() const {
     // strategy with selection of minimum dual component as new active
-    double minDual = std::numeric_limits<double>::max();
+    double newActive = std::numeric_limits<double>::max();
+    newActiveIndex = nConstraints; //default value
     bool newFound = false;
     if (settings.actSetUpdtSettings.firstInactive) {
         // first check inactive components
         for (unsg_t i = 0; i < nConstraints; ++i) {
-            if (ws.activeConstraints.find(i) != ws.activeConstraints.end() || SkipCandidate(i)) {
-                continue;
-            }
-            const double dl = ws.dual[i];
-            if (dl < dualTolerance && dl < minDual) {
-                minDual = dl;
+            if ((ws.activeConstraints.find(i) == ws.activeConstraints.end()) &&
+                IsCandidateForNewActive(i, newActive)) {
+                newActive = ws.dual[i];
                 newFound = true;
-                newActive = minDual;
-                newActiveIndex = i;
             }
         }
         if (!newFound) {
             //first check active components. TODO : May dual be negative ???
             for (auto indx : ws.activeConstraints) {
-                if (!SkipCandidate(indx)) {
-
+                if (IsCandidateForNewActive(i, newActive)) {
+                    newActive = ws.dual[i];
+                    newFound = true;
                 }
             }
         }
+    } else {
+        for (unsg_t i = 0; i < nConstraints; ++i) {
+            if (IsCandidateForNewActive(i, newActive)) {
+                newActive = ws.dual[i];
+                newFound = true;
+            }
+        }
     }
+    if (!newFound) { //finally check in indices to Skip
+        //TODO
+    }
+    return newActiveIndex;
 }
 
 unsg_t Core::SolvePrimal() {
@@ -245,6 +264,7 @@ bool Core::MakeLineSearch() {
                 ws.activeConstraints.erase(i);
             }
         }
+        //UpdateGammaAfterLineSearch();
         if (settings.minNNLSDualTol < 1.0e-10) {
             gamma = std::fabs(gamma - gammaCorrection);
         }
@@ -293,6 +313,7 @@ void Core::Solve() {
     dualExitStatus = DualLoopExitStatus::UNKNOWN;
     primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     unsg_t dualIteration = 0;
+    gamma = 1.0;
     while (dualIteration < settings.nDualIterations) {
         if (OrigInfeasible()) {
             dualExitStatus = DualLoopExitStatus::INFEASIBILITY;
@@ -309,6 +330,7 @@ void Core::Solve() {
             dualExitStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
             break;
         }
+        AddToActiveSet(newActive);
         UpdateGammaOnDualIteration();
         unsg_t primalIteration = 0;
         primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
@@ -344,6 +366,6 @@ void Core::Solve() {
     if (dualIteration >= settings.nDualIterations) {
         dualExitStatus = DualLoopExitStatus::ITERATIONS;
     }
-
 }
+
 }
