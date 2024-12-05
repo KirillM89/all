@@ -48,9 +48,9 @@ class Core {
         void Clear();
     };
 
-    enum class PrimalRetStatus {
-        SUCCESS = 0,
-        SINGULARITY,
+    enum PrimalRetStatus {
+        SINGULARITY = 0x01,
+        LINE_SEARCH_FAILED = 0x02
     };
 
 public:
@@ -73,6 +73,7 @@ private:
     double scaleFactorDB;
     double rsNorm;
     double newActive;
+    double dualTolerance;
     CoreSettings settings;
     WorkSpace ws;
     std::unique_ptr<iDBScaler> dbScaler;
@@ -83,17 +84,17 @@ private:
     bool OrigInfeasible();
     bool FullActiveSet();
     bool SkipCandidate(unsg_t indx);
+    bool MakeLineSearch();
     void TimePoint(std::string& buf);
     void ScaleD();
     void ComputeDualVariable();
     void UpdateGammaOnDualIteration();
     void AddToActiveSet(unsg_t indx);
     void RmvFromActiveSet(unsg_t indx);
-    void MakeLineSearch();
     void ResetPrimal();
     unsg_t SelectNewActiveComponent();
-    PrimalRetStatus UpdatePrimal();
-    PrimalRetStatus SolvePrimal();
+    unsg_t SolvePrimal();
+    int UpdatePrimal();
 };
 
 class NNLSQPSolver

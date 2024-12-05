@@ -327,7 +327,7 @@ namespace QP_NNLS {
 			}
 		}
 		if (isSame(minStep, initStep)) {
-			// final step == initial step if current primal and zp are same for negative zp components 
+            // final step == initial step if current prdualmal and zp are same for negative zp components
 			// primal must always be >= 0, so this case can be if zp[i] == 0 but in this function all zp components are negative 
 			if (st.logLevel > 1) {
 				logger.message("Line search WARNING: step didn't found");

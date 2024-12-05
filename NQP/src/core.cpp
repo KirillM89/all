@@ -165,7 +165,7 @@ unsg_t Core::SelectNewActiveComponent() {
                 continue;
             }
             const double dl = ws.dual[i];
-            if (dl < settings.minNNLSDualTol && dl < minDual) {
+            if (dl < dualTolerance && dl < minDual) {
                 minDual = dl;
                 newFound = true;
                 newActive = minDual;
@@ -183,7 +183,7 @@ unsg_t Core::SelectNewActiveComponent() {
     }
 }
 
-Core::PrimalRetStatus Core::SolvePrimal() {
+unsg_t Core::SolvePrimal() {
     const std::size_t nActive = ws.activeConstraints.size();
     matrix_t M{};
     std::vector<double> s{};
@@ -208,25 +208,23 @@ Core::PrimalRetStatus Core::SolvePrimal() {
     }
     MMTbSolver mmtb;
     int nDNegative = mmtb.Solve(M, s);
-    const auto& sol= mmtb.GetSolution();
-    std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
-    ws.negativeZp.clear();
-    std::size_t i = 0;
-    for (auto indx: ws.activeConstraints) {
-        ws.zp[indx] = sol[i];
-        if (sol[i] < settings.nnlsPrimalZero) {
-            ws.negativeZp.insert(indx);
+    if (nDNegative > 0 && !settings.actSetUpdtSettings.rejectSingular) {
+        const auto& sol= mmtb.GetSolution();
+        std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
+        ws.negativeZp.clear();
+        std::size_t i = 0;
+        for (auto indx: ws.activeConstraints) {
+            ws.zp[indx] = sol[i];
+            if (sol[i] < settings.nnlsPrimalZero) {
+                ws.negativeZp.insert(indx);
+            }
         }
-
     }
     // TODO: check quality
-    if (nDNegative > 0) {
-        return PrimalRetStatus::SINGULARITY;
-    }
-    return PrimalRetStatus::SUCCESS;
+    return nDNegative;
 }
 
-void Core::MakeLineSearch() {
+bool Core::MakeLineSearch() {
     double minStep = std::numeric_limits<double>::max();
     bool stepFound = false;
     // case if all zp are non-negative must be proccessed before this function, negativePrimalIndices must not be empty
@@ -237,26 +235,36 @@ void Core::MakeLineSearch() {
             stepFound = true;
         }
     }
-    //primal_next = primal + step * (zp - primal)
-    double gammaCorrection = 0.0;
-    for (unsg_t i = 0; i < nConstraints; ++i) {
-        ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
-        if (std::fabs(ws.primal[i]) < settings.nnlsPrimalZero) {
-            gammaCorrection += std::fabs(ws.s[i]);
-            ws.activeConstraints.erase(i);
+    if (stepFound) {
+        //primal_next = primal + step * (zp - primal)
+        double gammaCorrection = 0.0;
+        for (unsg_t i = 0; i < nConstraints; ++i) {
+            ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
+            if (std::fabs(ws.primal[i]) < settings.nnlsPrimalZero) {
+                gammaCorrection += std::fabs(ws.s[i]);
+                ws.activeConstraints.erase(i);
+            }
+        }
+        if (settings.minNNLSDualTol < 1.0e-10) {
+            gamma = std::fabs(gamma - gammaCorrection);
         }
     }
-    if (settings.minNNLSDualTol < 1.0e-10) {
-        gamma = std::fabs(gamma - gammaCorrection);
-    }
+    return stepFound || ws.negativeZp.empty();
 }
 
-Core::PrimalRetStatus Core::UpdatePrimal() {
-    PrimalRetStatus res = SolvePrimal();
-    if (res == PrimalRetStatus::SINGULARITY &&
-        settings.actSetUpdtSettings.rejectSingular) {
-    } else if (!ws.negativeZp.empty()) {
-        MakeLineSearch();
+int Core::UpdatePrimal() {
+    int res = 0;
+    if (SolvePrimal() > 0) {
+        res |= SINGULARITY;
+    }
+    if (!settings.actSetUpdtSettings.rejectSingular) {
+        if (!ws.negativeZp.empty() ) {
+            if (!MakeLineSearch()) {
+                res |= LINE_SEARCH_FAILED;
+            }
+        } else {
+            ws.primal = ws.zp;
+        }
     }
     return res;
 }
@@ -283,9 +291,8 @@ void Core::UpdateGammaOnDualIteration() {
 }
 void Core::Solve() {
     dualExitStatus = DualLoopExitStatus::UNKNOWN;
-    primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
+    primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     unsg_t dualIteration = 0;
-    double dualTolerance = std::numeric_limits<double>::max();
     while (dualIteration < settings.nDualIterations) {
         if (OrigInfeasible()) {
             dualExitStatus = DualLoopExitStatus::INFEASIBILITY;
@@ -311,9 +318,31 @@ void Core::Solve() {
                                                           PrimalLoopExitStatus::EMPTY_ACTIVE_SET;
                 break;
             }
-            PrimalRetStatus prStat = UpdatePrimal();
+            int prStat = UpdatePrimal();
+            const bool success = (prStat == 0) ||((prStat == SINGULARITY)
+                    && !settings.actSetUpdtSettings.rejectSingular);
+            const bool rejectSingular = (prStat == SINGULARITY) && settings.actSetUpdtSettings.rejectSingular;
+            if (success) {
+                if (ws.negativeZp.empty()) {
+                    primalExitStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+                    break;
+                } else {
+                    ++primalIteration;
+                }
+            } else if (rejectSingular) {
+                primalExitStatus = PrimalLoopExitStatus::SINGULAR_MATRIX;
+                break;
+            } else {
+                primalExitStatus = PrimalLoopExitStatus::LINE_SEARCH_FAILED;
+                break;
+            }
         }
-
+        if (primalIteration >= settings.nPrimalIterations) {
+            primalExitStatus = PrimalLoopExitStatus::ITERATIONS;
+        }
+    }
+    if (dualIteration >= settings.nDualIterations) {
+        dualExitStatus = DualLoopExitStatus::ITERATIONS;
     }
 
 }
