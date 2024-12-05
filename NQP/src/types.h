@@ -59,6 +59,12 @@ enum class InitStageStatus {
     CHOLETSKY
 };
 
+struct ActiveSetUpdateSettings {
+    int rptInterval = -1;
+    bool rejectSingular = false;
+    bool firstInactive = true;
+};
+
 struct CoreSettings {
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
@@ -68,6 +74,7 @@ struct CoreSettings {
     double origPrimalFsb = 1.0e-6;
     double nnlsPrimalZero = -1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero
     double minNNLSDualTol = -1.0e-12;
+    ActiveSetUpdateSettings actSetUpdtSettings;
 };
 
 struct Settings {

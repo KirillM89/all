@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <queue>
 #include <unordered_set>
 #include <memory>
 #include "types.h"
@@ -43,7 +44,13 @@ class Core {
         matrix_t Jac;
         matrix_t Chol;
         matrix_t CholInv;
+        std::queue<unsg_t> addHistory;
         void Clear();
+    };
+
+    enum class PrimalRetStatus {
+        SUCCESS = 0,
+        SINGULARITY,
     };
 
 public:
@@ -52,22 +59,41 @@ public:
     void ResetProblem();
     void SetCallback(std::shared_ptr<Callback> callback);
     bool InitProblem(const DenseQPProblem& problem);
-    void Solve() {}
-    const SolverOutput& GetOutput() { return SolverOutput(); }
+    void Solve();
+    const SolverOutput& GetOutput() { return output; }
 private:
     unsg_t nVariables;
     unsg_t nConstraints;
     unsg_t nEqConstraints;
+    unsg_t newActiveIndex;
+    DualLoopExitStatus dualExitStatus;
+    PrimalLoopExitStatus primalExitStatus;
+    double gamma;
+    double styGamma;
     double scaleFactorDB;
+    double rsNorm;
+    double newActive;
     CoreSettings settings;
     WorkSpace ws;
     std::unique_ptr<iDBScaler> dbScaler;
     std::unique_ptr<iTimer> timer;
     std::shared_ptr<Callback> uCallback;
+    SolverOutput output;
     bool PrepareNNLS(const DenseQPProblem& problem);
+    bool OrigInfeasible();
+    bool FullActiveSet();
+    bool SkipCandidate(unsg_t indx);
     void TimePoint(std::string& buf);
     void ScaleD();
-
+    void ComputeDualVariable();
+    void UpdateGammaOnDualIteration();
+    void AddToActiveSet(unsg_t indx);
+    void RmvFromActiveSet(unsg_t indx);
+    void MakeLineSearch();
+    void ResetPrimal();
+    unsg_t SelectNewActiveComponent();
+    PrimalRetStatus UpdatePrimal();
+    PrimalRetStatus SolvePrimal();
 };
 
 class NNLSQPSolver

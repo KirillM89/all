@@ -24,7 +24,7 @@ namespace QP_NNLS {
 	void ComputeCholFactor(const matrix_t& M, matrix_t& cholF) {
 		// A=LLT
 		// cholF must be initialized with zeros
-		// Cholesky–Banachiewicz 
+		// Choleskyâ€“Banachiewicz 
 		std::size_t n = M.size();
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j <= i; j++) {
@@ -180,6 +180,24 @@ namespace QP_NNLS {
 			}
 		}
 	}
+
+    void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::unordered_set<unsg_t>& activesetIndices, std::vector<double>& res) {
+        //MT*v on active set
+        const std::size_t nrows = M.size();
+        if (nrows == 0) {
+            res.clear();
+            return;
+        }
+        const std::size_t ncols = M.front().size();
+        std::fill(res.begin(), res.end(), 0.0);
+        for (std::size_t i = 0; i < ncols; ++i) {
+            res[i] = 0.0;
+            for (auto iAct: activesetIndices) {
+                res[i] += M[iAct][i] * v[iAct];
+            }
+        }
+    }
+
 
     void swapColumns(matrix_t& M, int c1, int c2) {
 		if (c1 == c2){
@@ -477,7 +495,13 @@ namespace QP_NNLS {
 		}
 		return res;
 	}
-
+    double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::unordered_set<unsg_t>& activeSetIndices) {
+        double res = 0.0;
+        for (auto iAct: activeSetIndices) {
+            res += v1[iAct] * v2[iAct];
+        }
+        return res;
+    }
 	void RRF(matrix_t & matrix) {
 		int lead = 0;
 		int rowCount = matrix.size();

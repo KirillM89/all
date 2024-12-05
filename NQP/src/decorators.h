@@ -30,7 +30,7 @@ namespace QP_NNLS {
     public:
         Callback() = default;
         virtual ~Callback() = default;
-        virtual void processData() {
+        virtual void ProcessData() {
             return;
         };
         InitializationData initData;
