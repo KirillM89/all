@@ -1,5 +1,6 @@
 #include "NNLSQPSolver.h"
 #include <cmath>
+#include <algorithm>
 namespace QP_NNLS {
 void Core::WorkSpace::Clear() {
     s.clear();
@@ -156,16 +157,16 @@ void Core::RmvFromActiveSet(unsg_t indx) {
 void Core::ResetPrimal(){
 
 }
-bool Core::IsCandidateForNewActive(unsg_t index, double toCompare) {
+bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare) {
     bool res = false;
     const double dl = ws.dual[indx];
-    if (!SkipCandidate(index) && (dl < dualTolerance && dl < toCompare)) {
-        newActiveIndex = i;
+    if (!SkipCandidate(indx) && (dl < dualTolerance && dl < toCompare)) {
+        newActiveIndex = indx;
         res = true;
     }
     return res;
 }
-unsg_t Core::SelectNewActiveComponent() const {
+unsg_t Core::SelectNewActiveComponent() {
     // strategy with selection of minimum dual component as new active
     double newActive = std::numeric_limits<double>::max();
     newActiveIndex = nConstraints; //default value
@@ -181,7 +182,7 @@ unsg_t Core::SelectNewActiveComponent() const {
         }
         if (!newFound) {
             //first check active components. TODO : May dual be negative ???
-            for (auto indx : ws.activeConstraints) {
+            for (auto i : ws.activeConstraints) {
                 if (IsCandidateForNewActive(i, newActive)) {
                     newActive = ws.dual[i];
                     newFound = true;

@@ -85,7 +85,7 @@ private:
     bool FullActiveSet();
     bool SkipCandidate(unsg_t indx);
     bool MakeLineSearch();
-    bool IsCandidateForNewActive(unsg_t index, double& toCompare);
+    bool IsCandidateForNewActive(unsg_t index, double toCompare);
     void TimePoint(std::string& buf);
     void ScaleD();
     void ComputeDualVariable();
@@ -93,7 +93,7 @@ private:
     void AddToActiveSet(unsg_t indx);
     void RmvFromActiveSet(unsg_t indx);
     void ResetPrimal();
-    unsg_t SelectNewActiveComponent() const;
+    unsg_t SelectNewActiveComponent();
     unsg_t SolvePrimal();
     int UpdatePrimal();
 };
