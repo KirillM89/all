@@ -40,7 +40,5 @@ namespace QP_NNLS {
         return true;
     }
 
-
-
 }
 

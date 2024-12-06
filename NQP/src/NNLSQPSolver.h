@@ -36,6 +36,7 @@ class Core {
         std::vector<double> b;
         std::vector<double> v;
         std::vector<double> slack;
+        std::vector<double> violations;
         std::vector<int> pmt;
         std::unordered_set<unsigned int> activeConstraints;
         std::unordered_set<unsigned int> negativeZp;
@@ -69,6 +70,7 @@ private:
     unsg_t newActiveIndex;
     unsg_t rptInterval;
     unsg_t singularIndex;
+    unsg_t dualIteration;
     DualLoopExitStatus dualExitStatus;
     PrimalLoopExitStatus primalExitStatus;
     double gamma;
@@ -94,6 +96,7 @@ private:
     void SetDefaultSettings();
     void TimePoint(std::string& buf);
     void ScaleD();
+    void UnscaleD();
     void ComputeDualVariable();
     void UpdateGammaOnDualIteration();
     void AddToActiveSet(unsg_t indx);
@@ -105,8 +108,10 @@ private:
     void ComputeOrigSolution();
     void ComputeExactLambdaOnActiveSet();
     void ComputeCost();
-    double ComputeDualityGap();
+    void ComputeDualityGap();
+    void ComputeViolationsExplicitly();
     void FillOutput();
+    void SetIterationData();
     unsg_t SelectNewActiveComponent();
     unsg_t SolvePrimal();
     int UpdatePrimal();

@@ -162,13 +162,18 @@ enum class PreprocStatus {
 };
 
 struct SolverOutput {
-    PreprocStatus preprocStatus = PreprocStatus::SUCCESS;
-	DualLoopExitStatus dualExitStatus = DualLoopExitStatus::UNKNOWN;
-	PrimalLoopExitStatus primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
-	int nDualIterations;
+    PreprocStatus preprocStatus;
+    DualLoopExitStatus dualExitStatus;
+    PrimalLoopExitStatus primalExitStatus;
+    unsg_t nDualIterations;
 	double maxViolation;
 	double dualityGap;
-	TimeIntervals tIntervals;
+    double cost;
+    std::vector<double> x;
+    std::vector<double> lambda;
+    std::vector<double> lambdaLw;
+    std::vector<double> lambdaUp;
+    std::vector<double> violations;
 };
 
 }

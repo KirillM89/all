@@ -505,11 +505,11 @@ namespace QP_NNLS {
 
 		minDualIndex = -1;            // index of most negative NNLS dual variable
 		int singularConstraint = -1;  // index of constraint which makes [M s] matrix singular
-		int dualIteration = 0;
 		//dual loop for NNLS problem
 		dualExitStatus = DualLoopExitStatus::UNKNOWN;
 		primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
 		int iLast = -1;
+        int dualIteration = 0;
 		while (dualIteration < st.nDualIterations) {
 			dualExitStatus = DualLoopExitStatus::UNKNOWN;
 			if (st.logLevel > 1) {

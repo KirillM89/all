@@ -46,6 +46,7 @@ void Core::WorkSpace::Clear() {
     Jac.clear();
     Chol.clear();
     CholInv.clear();
+    violations.clear();
     addHistory = {};
 }
 void Core::SetDefaultSettings() {
@@ -102,6 +103,7 @@ void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
         ws.b[ibg + 1] = -lb[i];
     }
     nConstraints += 2 * nVariables;
+    ws.violations.resize(nConstraints, 0.0);
 }
 bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     nVariables = static_cast<unsg_t>(problem.H.size());
@@ -144,6 +146,7 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     VSum(MByV, ws.b, ws.s);
     scaleFactorDB = dbScaler -> Scale(ws.M, ws.s, settings.origPrimalFsb);
     ScaleD();
+    return true;
 }
 void Core::TimePoint(std::string& buf) {
     TimeIntervals tIntervals;
@@ -305,7 +308,6 @@ bool Core::MakeLineSearch() {
                 ws.activeConstraints.erase(i);
             }
         }
-        //UpdateGammaAfterLineSearch();
         if (settings.minNNLSDualTol < 1.0e-10) {
             gamma = std::fabs(gamma - gammaCorrection);
         }
@@ -346,11 +348,34 @@ void Core::ScaleD() {
     }
 }
 
+void Core::UnscaleD() {
+    const double invScaleFactor = 1.0 / scaleFactorDB;
+    for (std::size_t i = 0; i < nConstraints; ++i) {
+        ws.b[i] *= invScaleFactor;
+        ws.lambda[i] *= invScaleFactor;
+        ws.violations[i] *= invScaleFactor;
+    }
+    for (std::size_t i = 0; i < nVariables; ++i) {
+        ws.x[i] *= invScaleFactor;
+        ws.c[i] *= invScaleFactor;
+        if (settings.dbScalerStrategy == DBScalerStrategy::SCALE_FACTOR && scaleFactorDB < 1.0) {
+            settings.origPrimalFsb *= invScaleFactor;
+        }
+    }
+}
+
+
 void Core::UpdateGammaOnDualIteration() {
 
 }
 void Core::ComputeCost() {
-
+    cost = DotProduct(ws.c, ws.x);
+    for (unsg_t i = 0; i < nVariables; ++i) {
+        for (unsg_t j = 0; j < i; ++j) {
+            cost += ws.H[i][j] * ws.x[i] * ws.x[j];
+        }
+        cost += 0.5 * ws.H[i][i] * ws.x[i] * ws.x[i];
+    }
 }
 void Core::ComputeExactLambdaOnActiveSet() {
     // Correct lambdas for active constraints to improve feasibility
@@ -372,7 +397,7 @@ void Core::ComputeExactLambdaOnActiveSet() {
     }
 }
 
-double Core::ComputeDualityGap() {
+void Core::ComputeDualityGap() {
     // x, lambda must be correct!
     // For original problem
     // A * x_opt - b = -s - M * M_T * lambda
@@ -388,7 +413,10 @@ double Core::ComputeDualityGap() {
     const double dualValue = -0.5 * (mty2 + vTv) - lamTByS;
     std::vector<double> Ax(nConstraints);
     Mult(ws.Jac, ws.x, Ax);
-    const double fsb = DotProduct(Ax, ws.lambda) - DotProduct(ws.b, ws.lambda);
+    for (auto i = 0; i < nConstraints; ++i) {
+        ws.violations[i] = Ax[i] - ws.b[i];
+    }
+    const double fsb = DotProduct(ws.violations, ws.lambda);
     ComputeCost();
     dualityGap = cost + fsb - dualValue;
 }
@@ -412,14 +440,45 @@ void Core::ComputeOrigSolution() {
     }
 }
 
-void Core::FillOutput() {
 
+void Core::FillOutput() {
+    output.dualExitStatus = dualExitStatus;
+    output.primalExitStatus = primalExitStatus;
+    if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY){
+        output.x = ws.x;
+        const std::size_t nc = nConstraints - 2 * nVariables;
+        output.lambda.resize(nc, 0.0);
+        output.lambdaLw.resize(nVariables, 0.0);
+        output.lambdaUp.resize(nVariables, 0.0);
+        for (std::size_t i = 0; i < nc; ++i) {
+            output.lambda[i] = ws.lambda[i];
+        }
+        for (std::size_t i = 0; i <nVariables; ++i) {
+            output.lambdaUp[i] = ws.lambda[nc + 2 * i];
+            output.lambdaLw[i] = ws.lambda[nc + 2 * i + 1];
+        }
+        output.violations = ws.violations;
+        output.dualityGap = dualityGap;
+        output.cost = cost;
+    }
+    output.nDualIterations = dualIteration;
+}
+
+void Core::SetIterationData() {
+    uCallback->iterData.activeSet = &ws.activeConstraints;
+    uCallback->iterData.primal = &ws.primal;
+    uCallback->iterData.dual = &ws.dual;
+    uCallback->iterData.violations = &ws.violations;
+    uCallback->iterData.iteration = dualIteration;
+    uCallback->iterData.newIndex = newActiveIndex;
+    uCallback->iterData.singular = singularIndex == newActiveIndex;
+    uCallback->ProcessData(2);
 }
 
 void Core::Solve() {
     dualExitStatus = DualLoopExitStatus::UNKNOWN;
     primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
-    unsg_t dualIteration = 0;
+    dualIteration = 0;
     gamma = 1.0;
     while (dualIteration < settings.nDualIterations) {
         if (OrigInfeasible()) {
@@ -472,12 +531,19 @@ void Core::Solve() {
         if (primalIteration >= settings.nPrimalIterations) {
             primalExitStatus = PrimalLoopExitStatus::ITERATIONS;
         }
+
+        SetIterationData();
+        ++dualIteration;
     }
+
     if (dualIteration >= settings.nDualIterations) {
         dualExitStatus = DualLoopExitStatus::ITERATIONS;
     }
     if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
         ComputeOrigSolution();
+        ComputeDualityGap();
+        UnscaleD();
+        ComputeCost();
     }
     FillOutput();
 }

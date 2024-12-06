@@ -2,10 +2,17 @@
 #define QP_NNLS_DECORATORS_H
 #include <memory>
 #include <vector>
+#include <unordered_set>
 #include "types.h"
 namespace QP_NNLS {
     struct IterationData {
-
+       std::vector<double>* dual;
+       std::vector<double>* primal;
+       std::vector<double>* violations;
+       std::unordered_set<unsg_t>* activeSet;
+       unsg_t newIndex;
+       unsg_t iteration;
+       bool singular;
     };
 
     struct FinalData {
@@ -25,6 +32,7 @@ namespace QP_NNLS {
         matrix_t M;
         InitStageStatus InitStatus;
     };
+
 
     class Callback {
     public:
