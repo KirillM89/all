@@ -30,7 +30,7 @@ namespace QP_NNLS {
     public:
         Callback() = default;
         virtual ~Callback() = default;
-        virtual void ProcessData() {
+        virtual void ProcessData(int stage) {
             return;
         };
         InitializationData initData;
@@ -42,7 +42,7 @@ namespace QP_NNLS {
     class QPNNLS {
     public:
         void Init(const Settings& settings);
-        void SetCallback(std::shared_ptr<Callback> callback);
+        void SetCallback(std::unique_ptr<Callback> callback);
         const SolverOutput& GetOutput();
     protected:
         QPNNLS();

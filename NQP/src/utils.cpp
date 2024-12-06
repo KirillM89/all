@@ -190,10 +190,12 @@ namespace QP_NNLS {
         }
         const std::size_t ncols = M.front().size();
         std::fill(res.begin(), res.end(), 0.0);
-        for (std::size_t i = 0; i < ncols; ++i) {
-            res[i] = 0.0;
-            for (auto iAct: activesetIndices) {
-                res[i] += M[iAct][i] * v[iAct];
+        if (!activesetIndices.empty()) {
+            for (std::size_t i = 0; i < ncols; ++i) {
+                res[i] = 0.0;
+                for (auto iAct: activesetIndices) {
+                    res[i] += M[iAct][i] * v[iAct];
+                }
             }
         }
     }
@@ -268,7 +270,7 @@ namespace QP_NNLS {
 		const matrix_t& M2_1 = M1;
 		M1M2T(M1_1, M2_1, MMT);
 	}
-	void InvertByGauss(const matrix_t& M, matrix_t& Minv) {
+    void  InvertByGauss(const matrix_t& M, matrix_t& Minv) {
 		matrix_t Mtmp = M;
         const int n = M.size(); // n is square matrix
         // Create the augmented matrix

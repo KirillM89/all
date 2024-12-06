@@ -14,8 +14,8 @@ namespace QP_NNLS {
         }
     }
 
-    void QPNNLS::SetCallback(std::shared_ptr<Callback> callback) {
-            core->SetCallback(callback);
+    void QPNNLS::SetCallback(std::unique_ptr<Callback> callback) {
+            core->SetCallback(std::move(callback));
     }
 
     const SolverOutput& QPNNLS::GetOutput() {

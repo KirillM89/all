@@ -65,7 +65,7 @@ namespace QP_NNLS {
 			if(!prepareNNLS()) {
 				return false;
 			}
-			scaleFactor = dbScaler -> Scale(matM, vecS, st);
+            scaleFactor = dbScaler -> Scale(matM, vecS, const_cast<double&>(st.origFeasibilityTol));
 			logger.message("scaleFactor", scaleFactor);
 			logger.message("unscaled problem:");
 			dumpProblem();
@@ -1101,7 +1101,7 @@ namespace QP_NNLS {
     DBScaler::DBScaler(DBScalerStrategy strategy):
 		scaleStrategy(strategy)
 	{}
-	double DBScaler::Scale(const matrix_t& M, const std::vector<double>& s, const NNLSQPSolver::Settings& solverSettings) {
+    double DBScaler::Scale(const matrix_t& M, const std::vector<double>& s, double& origTol) {
 	    // on zero dual iteration when active set is empty yet dual = gamma * s
 		// if any component of s is very small, it's comparison with tolerance in active set selection procedure 
 		// may be incorrect which leads to incorrect new active component 
@@ -1154,13 +1154,13 @@ namespace QP_NNLS {
 					// dual[i] > (gamma + s_T * y) * origFeasibilityTol => (A * x)[i] - b[i] <= origFeasibilityTol
 					// Increasing gamma from iteration to iteration improves numerical stability 
 					// but for zero iteration if gamma == 1 |s[i]_min| must be > origFeasibilityTol
-					const double unscaledTol = solverSettings.origFeasibilityTol; 
+                    const double unscaledTol = origTol;
 				    double scaleCoef = maxBalanceFactor / balanceFactor_1;
 
                     while (unscaledTol * scaleCoef < 1.0e-14 || minSComponent * scaleCoef < 1.0e-7 ) {
 						scaleCoef *= 10.0;
 					}
-					const_cast<double&>(solverSettings.origFeasibilityTol) = unscaledTol * scaleCoef; 
+                    origTol = unscaledTol * scaleCoef;
 				
 					return scaleCoef;
 				} else if ( 1.0 / balanceFactor_1  > maxBalanceFactor) {
@@ -1184,6 +1184,7 @@ namespace QP_NNLS {
 			double mBalanceFactor = maxEl / minEl;
 			double sBalanceFactor = maxSComponent / minSComponent;
 		}
+        return 1.0;
 	}
 
 }

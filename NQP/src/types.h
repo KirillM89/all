@@ -74,6 +74,7 @@ struct CoreSettings {
     double origPrimalFsb = 1.0e-6;
     double nnlsPrimalZero = -1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero
     double minNNLSDualTol = -1.0e-12;
+    bool gammaUpdate = false;
     ActiveSetUpdateSettings actSetUpdtSettings;
 };
 

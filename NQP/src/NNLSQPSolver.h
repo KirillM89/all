@@ -54,10 +54,11 @@ class Core {
     };
 
 public:
-    Core() {}
+    Core();
+    ~Core() = default;
     void Set(const CoreSettings& settings);
     void ResetProblem();
-    void SetCallback(std::shared_ptr<Callback> callback);
+    void SetCallback(std::unique_ptr<Callback> callback);
     bool InitProblem(const DenseQPProblem& problem);
     void Solve();
     const SolverOutput& GetOutput() { return output; }
@@ -66,6 +67,8 @@ private:
     unsg_t nConstraints;
     unsg_t nEqConstraints;
     unsg_t newActiveIndex;
+    unsg_t rptInterval;
+    unsg_t singularIndex;
     DualLoopExitStatus dualExitStatus;
     PrimalLoopExitStatus primalExitStatus;
     double gamma;
@@ -74,11 +77,13 @@ private:
     double rsNorm;
     double newActive;
     double dualTolerance;
+    double dualityGap;
+    double cost;
     CoreSettings settings;
     WorkSpace ws;
     std::unique_ptr<iDBScaler> dbScaler;
     std::unique_ptr<iTimer> timer;
-    std::shared_ptr<Callback> uCallback;
+    std::unique_ptr<Callback> uCallback;
     SolverOutput output;
     bool PrepareNNLS(const DenseQPProblem& problem);
     bool OrigInfeasible();
@@ -86,6 +91,7 @@ private:
     bool SkipCandidate(unsg_t indx);
     bool MakeLineSearch();
     bool IsCandidateForNewActive(unsg_t index, double toCompare);
+    void SetDefaultSettings();
     void TimePoint(std::string& buf);
     void ScaleD();
     void ComputeDualVariable();
@@ -93,6 +99,14 @@ private:
     void AddToActiveSet(unsg_t indx);
     void RmvFromActiveSet(unsg_t indx);
     void ResetPrimal();
+    void AllocateWs();
+    void ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
+                        const std::vector<double>& lb, const std::vector<double>& ub);
+    void ComputeOrigSolution();
+    void ComputeExactLambdaOnActiveSet();
+    void ComputeCost();
+    double ComputeDualityGap();
+    void FillOutput();
     unsg_t SelectNewActiveComponent();
     unsg_t SolvePrimal();
     int UpdatePrimal();
@@ -197,7 +211,7 @@ private:
 	void updateGammaOnPrimalIteration();
 	double checkConstraints();
 	void computeLambdaFromDualProblem();
-	void extendJacWithBounds(const std::vector<double>& lw, const std::vector<double>& up);
+    void extendJacWithBounds(const std::vector<double>& lw, const std::vector<double>& up);
 	void findExactLambdaOnActiveSet();
 	void scaleMB();
 	void scaleD();
@@ -261,7 +275,7 @@ protected:
 
 class iDBScaler {
 public:
-    virtual double Scale(const matrix_t& M, const std::vector<double>& s, const NNLSQPSolver::Settings& solverSettings ) = 0;
+    virtual double Scale(const matrix_t& M, const std::vector<double>& s, double& origTol) = 0;
 	virtual ~iDBScaler() = default;
 	iDBScaler(const iDBScaler& other) = delete;
 	iDBScaler& operator= (const iDBScaler& other) = delete;
@@ -276,7 +290,7 @@ public:
 	DBScaler() = delete;
 	DBScaler(DBScalerStrategy strategy); 
 	virtual ~DBScaler() override = default;
-	double Scale(const matrix_t& M, const std::vector<double>& s, const NNLSQPSolver::Settings& solverSettings) override;	
+    double Scale(const matrix_t& M, const std::vector<double>& s, double& origTol) override;
 protected:
     const double maxBalanceFactor = 1.0; //1.0e3;
 	const double balanceUpperBound = 1.0e30;
