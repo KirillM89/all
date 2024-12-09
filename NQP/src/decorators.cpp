@@ -39,6 +39,5 @@ namespace QP_NNLS {
     bool QPNNLS::VerifySettings(const Settings& settings) {
         return true;
     }
-
 }
 

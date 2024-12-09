@@ -44,5 +44,34 @@ namespace QP_NNLS {
 		fid << "\n";
 	}
 
+    Callback1::Callback1(const std::string& filePath):
+        logger(std::make_unique<Logger>())
+    {
+        logger->SetFile(filePath);
+    }
+
+
+    void Callback1::ProcessData(int stage) {
+        if (stage == 1) { // dump data after init stage
+            logger->SetStage("INITIALIZATION");
+            logger->dump("Choletsky", initData.Chol);
+            logger->dump("CholetskyInv", initData.CholInv);
+            logger->dump("Matrix M", initData.M);
+            logger->dump("vector s", initData.s);
+            logger->dump("vector c", initData.c);
+            logger->dump("vector b", initData.b);
+            logger->message("t Chol", initData.tChol);
+            logger->message("t Inv", initData.tInv);
+            logger->message("t M", initData.tM);
+        } else if (stage == 2) { // dump iteration data
+            logger->message("ITERATION", iterData.iteration);
+            logger->dump("active set", *iterData.activeSet);
+            logger->dump("primal", *iterData.primal);
+            logger->dump("dual", *iterData.dual);
+            logger->message("new active component", iterData.newIndex,
+                            "isSingular", iterData.singular ? 1 : 0);
+        }
+    }
+
 
 }
