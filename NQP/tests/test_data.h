@@ -6,6 +6,7 @@ namespace QP_NNLS_TEST_DATA {
     // 0.5 x_T * H * x + c_T * x ; A * x < b; lw <= x <= up
 
 const UserSettings NqpTestSettingsDefault;
+const Settings NqpTestSettingsDefaultNewInterface;
 namespace TRANSFORMATION_MATRIX {
     const matrix_t trMat1 = {{1.0, 2.0}, {-1.0, 3.0}};
 	const matrix_t trMat2 = {{-4.0, 18.0}, {1.0, -6.0}};
@@ -350,11 +351,16 @@ namespace C0_0_9 {
     const std::vector<double> b = { 1e-07, 1e-07, 1e-07, 1e-07, 0.231501462493308, 0.185946332828566, 0.0620477710440007, 0.0364484906758658, 0.254535859432201, 0.201978044010092, 0.106566792890159, 0.0529326539298031, 0.166758061426684, 0.168719778601206, 0.204279099529919, 0.0132236594228277, 0.175551027408611, 0.0888515731132375, 0.0617844316184403, 0.187826072627652, 0.0132236594228277, 0.0607602158225142, 0.0430802073502564, 0.165801022272299, 0.132617232634363, 0.230773268964061, 0.0132236594228277, 0.14941212275381, 0.0971732094366874, 0.15812969336888, 0.0621546432355495, 0.0405348324411019, 0.015022172933396, 0.0295205735529259, 0.211724900991848, 0.22531448916794, 0.125517008094465, 0.135091658771016, 0.144461007530682, 0.162954719642047, 0.0386051656359346, 0.262336780103993, 0.222689710855602, 0.230166637751992, 0.206433420850843, 0.0132236594228277, 0.135942942060234, 0.218560034874773, 0.0213574629886517, 0.189069883848885, 0.26015640875588, 0.087970954208474, 9998.48677633058, 0.0132236494228276, 4.76890874675844, 1.23109123324156, 9998.58640454622, 0.113595433781006, 9999.08677633058, 0.0132236494228277, 0.0132236494228277, 0.186776330577172, 0.0173321360424789, 0.182667843957521, 9999.48677633058, 0.0132236494228277, 0.0132236494228277, 3.48677633057717, 9998.95244342101, 0.347556558992913, 0.0132236494228277, 3.48677633057717, 0.0132236494228277, 0.986776330577172, 0.0132236494228276, 0.986776330577172, 10.1475653098152, 9.85243467018478, 49.99999997, 1.00000008274037e-08, 49.99999997, 1.00000008274037e-08, 49.99999997, 1.00000008274037e-08, 49.99999997,
             1.00000008274037e-08, 99.99999997, 9.99999372197635e-09, 99.99999997, 9.99999372197635e-09, 99.99999997, 9.99999372197635e-09, 99.99999997, 9.99999372197635e-09};
 }
-struct QPProblem {
+struct QPProblem : public DenseQPProblem {
     QPProblem() = default;
-    QPProblem(const matrix_t& H, const matrix_t& A, const std::vector<double>& c, const std::vector<double>& b, std::size_t nLinEq = 0):
-        nLinEq(nLinEq), H(H), A(A), c(c), b(b)
-    {}
+    QPProblem(const matrix_t& H, const matrix_t& A, const std::vector<double>& c, const std::vector<double>& b, std::size_t nLinEq = 0)
+    {
+        this -> H = H;
+        this -> A = A;
+        this -> b = b;
+        this -> c = c;
+        this -> nEqConstraints = nLinEq;
+    }
     QPProblem(matrix_t& H, const matrix_t& A, const std::vector<double>& c, const std::vector<double>& b, const std::vector<double>& lw,
                 const std::vector<double>& up, std::size_t nLinEq = 0):
         QPProblem(H, A, c, b, nLinEq)
@@ -363,7 +369,7 @@ struct QPProblem {
         this -> up = up;
     }
     void clear() {
-        nLinEq = 0;
+        nEqConstraints = 0;
         H.clear();
         A.clear();
         c.clear();
@@ -371,13 +377,14 @@ struct QPProblem {
         lw.clear();
         up.clear();
     }
-    std::size_t nLinEq = 0;
+    /*
     matrix_t H;
     matrix_t A;
     std::vector<double> c;
     std::vector<double> b;
     std::vector<double> lw;
     std::vector<double> up;
+    std::size_t nLinEq = 0;*/
 };
 static QPProblem simple_1(SIMPLE_1::H, SIMPLE_1::A, SIMPLE_1::c, SIMPLE_1::b);
 static QPProblem simple_2(SIMPLE_2::H, SIMPLE_2::A, SIMPLE_2::c, SIMPLE_2::b);

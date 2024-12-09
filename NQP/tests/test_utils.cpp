@@ -261,6 +261,7 @@ void TestMMTb(const matrix_t& M, const std::vector<double>& b) {
 		EXPECT_LT(std::fabs((b[i] - mmtx[i]) / b[i]), 1.0e-3) << "baseline=" << b[i] << " sol=" << mmtx[i] << " i=" << i;
 	}
 }
+
 void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline) {
 	ProblemReader pr;
 	pr.Init(problem.H, problem.c, problem.A, problem.b);
@@ -290,7 +291,7 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 	if (baseline.dualStatus == DualLoopExitStatus::INFEASIBILITY) {
 		ASSERT_EQ(solver.getDualStatus(), baseline.dualStatus);
 		return;
-	}
+	} 
 	const std::vector<double>& solverX= solver.getXOpt();
 	ASSERT_EQ(solverX.size(), H.size());
 	const double solverCost = solver.getCost();
@@ -316,6 +317,27 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 	}
 	EXPECT_TRUE(passed);
 }
+
+void TestSolverDense(const DenseQPProblem& problem, const Settings& settings,
+                     const QPBaseline& baseline, const std::string& logPath) {
+    QPNNLSDense solver;
+    std::unique_ptr<Callback> callback = std::make_unique<Callback1>(logPath);
+    solver.Init(settings);
+    solver.Solve(problem);
+    const SolverOutput output = solver.GetOutput();
+    ASSERT_EQ(output.preprocStatus, PreprocStatus::SUCCESS);
+    ASSERT_EQ(output.dualExitStatus, baseline.dualStatus);
+    ASSERT_EQ(output.primalExitStatus, baseline.primalStatus);
+    const std::size_t nX = output.x.size();
+    ASSERT_EQ(nX, baseline.xOpt.size());
+    const double tol = 1.0e-5;
+    EXPECT_LE(relativeVal(output.cost, baseline.cost), tol);
+    for (std::size_t i = 0; i < nX; ++i) {
+        EXPECT_LE(relativeVal(output.x[i], baseline.xOpt.front()[i]),tol);
+    }
+
+}
+
 
 
 void LinearTransform::setQPProblem(const QP_NNLS_TEST_DATA::QPProblem& problem) {

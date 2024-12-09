@@ -55,8 +55,6 @@ namespace QP_NNLS {
 			d = settings.problemD.c;
 			A = settings.problemD.A;
 			b = settings.problemD.b;
-			F = settings.problemD.F;
-			g = settings.problemD.g;
 			nVariables = static_cast<int>(H.size());
 			nConstraints = static_cast<int>(A.size());
 			nLEqConstraints = static_cast<int>(F.size());

@@ -104,13 +104,11 @@ struct DenseQPProblem {
 	//Ax <= b
 	//Fx = g
 	matrix_t H;
-	matrix_t A;
-	matrix_t F;
-	std::vector<double> b;
-	std::vector<double> c;
-	std::vector<double> g;
-	std::vector<double> up;
-	std::vector<double> lw;
+    matrix_t A;
+    std::vector<double> b;
+    std::vector<double> c;
+    std::vector<double> up;
+    std::vector<double> lw;
     unsg_t nEqConstraints;
 };
 

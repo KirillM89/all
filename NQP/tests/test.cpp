@@ -515,7 +515,11 @@ TEST(Solver, SolutionOnConstraintsIdentityHessTest1) {
 	QPBaseline baseline;
 	baseline.xOpt = {{-0.5, 0.5}};
 	baseline.cost = 0.25;
+#ifndef NEW_INTERFACE
 	TestSolver(case_2, NqpTestSettingsDefault, baseline);
+#else
+    TestSolverDense(static_cast<DenseQPProblem>(case_2), NqpTestSettingsDefaultNewInterface, baseline, "test1.txt");
+#endif
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest2) {
 	QPBaseline baseline;
