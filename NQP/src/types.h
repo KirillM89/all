@@ -72,9 +72,10 @@ struct CoreSettings {
     unsg_t nPrimalIterations = 100;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
-    double nnlsPrimalZero = -1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero
+    double nnlsPrimalZero = -1.0e-7; //zp < 0 => zp < nnlsPrimalZero
     double minNNLSDualTol = -1.0e-12;
-    bool gammaUpdate = false;
+    double prLtZero = 1.0e-14;
+    bool gammaUpdate = true;
     ActiveSetUpdateSettings actSetUpdtSettings;
 };
 
@@ -160,7 +161,6 @@ enum class PreprocStatus {
 };
 
 struct SolverOutput {
-    PreprocStatus preprocStatus;
     DualLoopExitStatus dualExitStatus;
     PrimalLoopExitStatus primalExitStatus;
     unsg_t nDualIterations;

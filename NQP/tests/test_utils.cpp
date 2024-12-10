@@ -325,10 +325,9 @@ void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings
     QPNNLSDense solver;
     solver.SetCallback(std::make_unique<Callback1>(logPath));
     solver.Init(settings);
-    solver.SetProblem(pr.getProblem());
+    ASSERT_TRUE(solver.SetProblem(pr.getProblem()));
     solver.Solve();
     const SolverOutput output = solver.GetOutput();
-    ASSERT_EQ(output.preprocStatus, PreprocStatus::SUCCESS);
     ASSERT_EQ(output.dualExitStatus, baseline.dualStatus);
     ASSERT_EQ(output.primalExitStatus, baseline.primalStatus);
     const std::size_t nX = output.x.size();

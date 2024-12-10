@@ -9,6 +9,7 @@ namespace QP_NNLS {
        std::vector<double>* dual;
        std::vector<double>* primal;
        std::vector<double>* violations;
+       std::vector<double>* zp;
        std::unordered_set<unsg_t>* activeSet;
        double gamma;
        unsg_t newIndex;
@@ -76,7 +77,7 @@ namespace QP_NNLS {
 
     class QPNNLSDense : public QPNNLS {
     public:
-        void SetProblem(const DenseQPProblem& problem);
+        bool SetProblem(const DenseQPProblem& problem);
         void Solve();
     };
 

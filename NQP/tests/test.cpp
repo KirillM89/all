@@ -539,25 +539,49 @@ TEST(Solver, SolutionOnConstraintsIdentityHessTest3) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0.0, 1.0}};
 	baseline.cost = 0.5;
-	TestSolver(case_4, NqpTestSettingsDefault, baseline);
+#ifndef NEW_INTERFACE
+    TestSolver(case_4, NqpTestSettingsDefault, baseline);
+#else
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
+    TestSolverDense(case_4, NqpTestSettingsDefaultNewInterface, baseline, "test3.txt");
+#endif
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest4) {
 	QPBaseline baseline;
 	baseline.xOpt = { {1.5, 2.5} };
 	baseline.cost = 4.25;
-	TestSolver(case_5, NqpTestSettingsDefault, baseline);
+#ifndef NEW_INTERFACE
+    TestSolver(case_5, NqpTestSettingsDefault, baseline);
+#else
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
+    TestSolverDense(case_5, NqpTestSettingsDefaultNewInterface, baseline, "test4.txt");
+#endif
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest5) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0, 1.0}};
 	baseline.cost = 0.5;
-	TestSolver(case_6, NqpTestSettingsDefault, baseline);
+#ifndef NEW_INTERFACE
+    TestSolver(case_6, NqpTestSettingsDefault, baseline);
+#else
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
+    TestSolverDense(case_6, NqpTestSettingsDefaultNewInterface, baseline, "test5.txt");
 }
+#endif
 TEST(Solver, SolutionOnConstraintsIdentityHessTest6) {
 	QPBaseline baseline;
 	baseline.xOpt = { {-0.5, 1.5} };
 	baseline.cost = 1.25;
-	TestSolver(case_7, NqpTestSettingsDefault, baseline);
+#ifndef NEW_INTERFACE
+    TestSolver(case_7, NqpTestSettingsDefault, baseline);
+#else
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
+    TestSolverDense(case_7, NqpTestSettingsDefaultNewInterface, baseline, "test7.txt");
+#endif
 }
 TEST_P(HessianParametrizedTest, SolutionOnConstraintsDiagHessSameValues) {
 	QPBaseline baseline;

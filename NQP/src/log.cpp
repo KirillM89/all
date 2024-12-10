@@ -66,6 +66,7 @@ namespace QP_NNLS {
         } else if (stage == 2) { // dump iteration data
             logger->message("---ITERATION---", iterData.iteration);
             logger->dump("active set", *iterData.activeSet);
+            logger->dump("zp", *iterData.zp);
             logger->dump("primal", *iterData.primal);
             logger->dump("dual", *iterData.dual);
             logger->message("new active component", iterData.newIndex,

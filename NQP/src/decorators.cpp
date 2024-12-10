@@ -23,16 +23,12 @@ namespace QP_NNLS {
         return output;
     }
 
-    void QPNNLSDense::SetProblem(const DenseQPProblem& problem) {
+    bool QPNNLSDense::SetProblem(const DenseQPProblem& problem) {
         if (!isInitialized) {
-            output.preprocStatus = PreprocStatus::INVALID_SETTINGS;
-            return;
+            return false;
         }
         core->ResetProblem();
-        if (!core->InitProblem(problem)) {
-            output.preprocStatus = PreprocStatus::INIT_FAILED;
-            return;
-        }
+        return core->InitProblem(problem);
     }
 
     void QPNNLSDense::Solve() {

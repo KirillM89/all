@@ -257,10 +257,10 @@ unsg_t Core::SolvePrimal() {
         M.resize(nActive);
         s.resize(nActive);
         std::size_t i = 0;
-        for (const unsg_t& indx: ws.activeConstraints ) {
+        for (auto indx: ws.activeConstraints ) {
             M[i] = ws.M[indx];
             s[i]= -gamma * ws.s[indx];
-            M.back().push_back(ws.s[indx]);
+            M[i].push_back(ws.s[indx]);
             ++i;
         }
     } else {
@@ -278,11 +278,16 @@ unsg_t Core::SolvePrimal() {
         std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
         ws.negativeZp.clear();
         std::size_t i = 0;
-        for (auto indx: ws.activeConstraints) {
-            ws.zp[indx] = sol[i];
-            if (sol[i] < settings.nnlsPrimalZero) {
-                ws.negativeZp.insert(indx);
+        if (nActive > 0) {
+            for (auto indx: ws.activeConstraints) {
+                ws.zp[indx] = sol[i];
+                if (sol[i] < settings.nnlsPrimalZero) {
+                    ws.negativeZp.insert(indx);
+                }
+                ++i;
             }
+        } else {
+            ws.zp = std::move(sol);
         }
     }
     // TODO: check quality
@@ -305,7 +310,7 @@ bool Core::MakeLineSearch() {
         gammaCorrection = 0.0;
         for (unsg_t i = 0; i < nConstraints; ++i) {
             ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
-            if (std::fabs(ws.primal[i]) < settings.nnlsPrimalZero) {
+            if (std::fabs(ws.primal[i]) < settings.prLtZero) {
                 gammaCorrection += std::fabs(ws.s[i]);
                 ws.activeConstraints.erase(i);
             }
@@ -479,6 +484,7 @@ void Core::SetIterationData() {
     uCallback->iterData.primal = &ws.primal;
     uCallback->iterData.dual = &ws.dual;
     uCallback->iterData.violations = &ws.violations;
+    uCallback->iterData.zp = &ws.zp;
     uCallback->iterData.iteration = dualIteration;
     uCallback->iterData.newIndex = newActiveIndex;
     uCallback->iterData.singular = singularIndex == newActiveIndex;
@@ -565,6 +571,14 @@ void Core::Solve() {
 
     if (dualIteration >= settings.nDualIterations) {
         dualExitStatus = DualLoopExitStatus::ITERATIONS;
+    }
+    if (dualExitStatus == DualLoopExitStatus::ALL_DUAL_POSITIVE ||
+        dualExitStatus == DualLoopExitStatus::FULL_ACTIVE_SET) {
+        SolvePrimal();
+        ws.primal = std::move(ws.zp);
+    }
+    if (OrigInfeasible()) {
+        dualExitStatus = DualLoopExitStatus::INFEASIBILITY;
     }
     if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
         ComputeOrigSolution();
