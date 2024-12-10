@@ -318,22 +318,26 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 	EXPECT_TRUE(passed);
 }
 
-void TestSolverDense(const DenseQPProblem& problem, const Settings& settings,
+void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings,
                      const QPBaseline& baseline, const std::string& logPath) {
+    ProblemReader pr;
+    pr.Init(problem.H, problem.c, problem.A, problem.b);
     QPNNLSDense solver;
-    std::unique_ptr<Callback> callback = std::make_unique<Callback1>(logPath);
+    solver.SetCallback(std::make_unique<Callback1>(logPath));
     solver.Init(settings);
-    solver.Solve(problem);
+    solver.SetProblem(pr.getProblem());
+    solver.Solve();
     const SolverOutput output = solver.GetOutput();
     ASSERT_EQ(output.preprocStatus, PreprocStatus::SUCCESS);
     ASSERT_EQ(output.dualExitStatus, baseline.dualStatus);
     ASSERT_EQ(output.primalExitStatus, baseline.primalStatus);
     const std::size_t nX = output.x.size();
-    ASSERT_EQ(nX, baseline.xOpt.size());
+    const auto& xBl = baseline.xOpt.front();
+    ASSERT_EQ(nX, xBl.size());
     const double tol = 1.0e-5;
     EXPECT_LE(relativeVal(output.cost, baseline.cost), tol);
     for (std::size_t i = 0; i < nX; ++i) {
-        EXPECT_LE(relativeVal(output.x[i], baseline.xOpt.front()[i]),tol);
+        EXPECT_LE(relativeVal(output.x[i], xBl[i]),tol);
     }
 
 }

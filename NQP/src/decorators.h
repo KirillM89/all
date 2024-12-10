@@ -67,7 +67,8 @@ namespace QP_NNLS {
 
     class QPNNLSDense : public QPNNLS {
     public:
-        void Solve(const DenseQPProblem& problem);
+        void SetProblem(const DenseQPProblem& problem);
+        void Solve();
     };
 
     class QPNNLSSparse : public QPNNLS {

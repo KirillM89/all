@@ -78,6 +78,7 @@ void Core::AllocateWs() {
     ws.primal.resize(nConstraints, 0.0);
     ws.dual.resize(nConstraints, 0.0);
     ws.v.resize(nVariables, 0.0);
+    ws.s.resize(nConstraints, 0.0);
     ws.zp.resize(nConstraints, 0.0);
     ws.lambda.resize(nConstraints, 0.0);
     ws.x.resize(nVariables, 0.0);
@@ -92,11 +93,11 @@ void Core::AllocateWs() {
 void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
                           const std::vector<double>& lb, const std::vector<double>& ub) {
     ws.Jac = Jac;
-    ws.Jac.resize(ws.Jac.size() + 2 * nConstraints, std::vector<double>(nVariables, 0.0));
+    ws.Jac.resize(ws.Jac.size() + 2 * nVariables, std::vector<double>(nVariables, 0.0));
     ws.b = b;
-    ws.b.resize(ws.b.size() + 2 * nConstraints, 0.0);
-    for (unsg_t i = 0; i <  nVariables; ++i) {
-        const int ibg = 2 * i + nConstraints;
+    ws.b.resize(ws.b.size() + 2 * nVariables, 0.0);
+    for (unsg_t i = 0; i < nVariables; ++i) {
+        const int ibg = nConstraints + 2 * i;
         ws.Jac[ibg][i] = 1.0;
         ws.Jac[ibg + 1][i] = -1.0;
         ws.b[ibg] = ub[i];
@@ -181,7 +182,7 @@ void Core::ComputeDualVariable() {
 bool Core::SkipCandidate(unsg_t indx) {
     if (rptInterval > 0) {
         return (std::find(ws.addHistory.begin(), ws.addHistory.end(), indx) != ws.addHistory.end());
-    } else if (!settings.actSetUpdtSettings.rejectSingular && singularIndex == indx) {
+    } else if (settings.actSetUpdtSettings.rejectSingular && singularIndex == indx) {
         return true;
     } else {
         return false;
@@ -271,7 +272,7 @@ unsg_t Core::SolvePrimal() {
     }
     MMTbSolver mmtb;
     int nDNegative = mmtb.Solve(M, s);
-    if (nDNegative > 0 && !settings.actSetUpdtSettings.rejectSingular) {
+    if (!settings.actSetUpdtSettings.rejectSingular) {
         const auto& sol= mmtb.GetSolution();
         std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
         ws.negativeZp.clear();
@@ -480,6 +481,7 @@ void Core::Solve() {
     primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     dualIteration = 0;
     gamma = 1.0;
+    singularIndex = nConstraints;
     while (dualIteration < settings.nDualIterations) {
         if (OrigInfeasible()) {
             dualExitStatus = DualLoopExitStatus::INFEASIBILITY;

@@ -518,7 +518,9 @@ TEST(Solver, SolutionOnConstraintsIdentityHessTest1) {
 #ifndef NEW_INTERFACE
 	TestSolver(case_2, NqpTestSettingsDefault, baseline);
 #else
-    TestSolverDense(static_cast<DenseQPProblem>(case_2), NqpTestSettingsDefaultNewInterface, baseline, "test1.txt");
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
+    TestSolverDense(case_2, NqpTestSettingsDefaultNewInterface, baseline, "test1.txt");
 #endif
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest2) {

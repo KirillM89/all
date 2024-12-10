@@ -57,7 +57,7 @@ void TestLDLRemove(matrix_t& M ,int i);
 void TestLDLAdd(matrix_t& M, const std::vector<double>& vc);
 void TestMMTb(const matrix_t& M, const std::vector<double>& b);
 void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline);
-void TestSolverDense(const DenseQPProblem& problem, const Settings& settings, const QPBaseline& baseline,
+void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings, const QPBaseline& baseline,
                      const std::string& logFile);
 double relativeVal(double a, double b);
 class TestCholetskyBase {

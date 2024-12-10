@@ -15,7 +15,7 @@ namespace QP_NNLS {
     }
 
     void QPNNLS::SetCallback(std::unique_ptr<Callback> callback) {
-            core->SetCallback(std::move(callback));
+        core->SetCallback(std::move(callback));
     }
 
     const SolverOutput& QPNNLS::GetOutput() {
@@ -23,7 +23,7 @@ namespace QP_NNLS {
         return output;
     }
 
-    void QPNNLSDense::Solve(const DenseQPProblem& problem) {
+    void QPNNLSDense::SetProblem(const DenseQPProblem& problem) {
         if (!isInitialized) {
             output.preprocStatus = PreprocStatus::INVALID_SETTINGS;
             return;
@@ -33,6 +33,9 @@ namespace QP_NNLS {
             output.preprocStatus = PreprocStatus::INIT_FAILED;
             return;
         }
+    }
+
+    void QPNNLSDense::Solve() {
         core->Solve();
     }
 
