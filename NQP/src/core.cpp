@@ -140,7 +140,7 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     TimePoint(uCallback -> initData.tChol);
     InvertTriangle(ws.Chol, ws.CholInv);   // Q^-1
     TimePoint(uCallback -> initData.tInv);
-    Mult(ws.Jac, ws.Chol, ws.M);           // M = A * Q^-1   nConstraints x nVariables
+    Mult(ws.Jac, ws.CholInv, ws.M);           // M = A * Q^-1   nConstraints x nVariables
     TimePoint(uCallback -> initData.tM);
     MultTransp(ws.CholInv, ws.c, ws.v);    // v = Q^-T * d nVariables
     std::vector<double> MByV(nConstraints);

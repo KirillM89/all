@@ -338,7 +338,6 @@ void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings
     for (std::size_t i = 0; i < nX; ++i) {
         EXPECT_LE(relativeVal(output.x[i], xBl[i]),tol);
     }
-
 }
 
 
@@ -731,7 +730,11 @@ void LinearTransformParametrized::TransformAndTest(const QP_NNLS_TEST_DATA::QPPr
 	LinearTransform tr;
 	tr.setQPProblem(problem);
 	//cost doesn't cahnge in linear transformation 
-	TestSolver(tr.transform(trMat), settings, baselineTr);
+#ifndef NEW_INTERFACE
+    TestSolver(tr.transform(trMat), settings, baselineTr);
+#else
+    TestSolverDense(tr.transform(trMat), QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface, baselineTr, "testTransform.txt");
+#endif
 }
 QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA::QPProblem& problem) {
 	NNLSQPSolver solver;
@@ -744,6 +747,8 @@ QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA:
 	QPBaseline baseline;
 	baseline.xOpt = {solver.getXOpt()};
 	baseline.cost = solver.getCost();
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
 	return baseline;
 }
 
