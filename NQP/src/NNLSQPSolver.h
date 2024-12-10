@@ -74,6 +74,7 @@ private:
     DualLoopExitStatus dualExitStatus;
     PrimalLoopExitStatus primalExitStatus;
     double gamma;
+    double gammaCorrection;
     double styGamma;
     double scaleFactorDB;
     double rsNorm;
@@ -98,6 +99,7 @@ private:
     void ScaleD();
     void UnscaleD();
     void ComputeDualVariable();
+    void UpdateGammaOnPrimalIteration();
     void UpdateGammaOnDualIteration();
     void AddToActiveSet(unsg_t indx);
     void RmvFromActiveSet(unsg_t indx);
@@ -112,6 +114,7 @@ private:
     void ComputeViolationsExplicitly();
     void FillOutput();
     void SetIterationData();
+    void SetFinalData();
     unsg_t SelectNewActiveComponent();
     unsg_t SolvePrimal();
     int UpdatePrimal();

@@ -10,13 +10,22 @@ namespace QP_NNLS {
        std::vector<double>* primal;
        std::vector<double>* violations;
        std::unordered_set<unsg_t>* activeSet;
+       double gamma;
        unsg_t newIndex;
        unsg_t iteration;
        bool singular;
     };
 
     struct FinalData {
-
+        PrimalLoopExitStatus primalStatus;
+        DualLoopExitStatus dualStatus;
+        unsg_t nIterations;
+        double cost;
+        std::vector<double> violations;
+        std::vector<double> x;
+        std::vector<double> lambda;
+        std::vector<double> lambdaUp;
+        std::vector<double> lambdaLw;
     };
 
     struct InitializationData {

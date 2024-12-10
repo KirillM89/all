@@ -527,7 +527,13 @@ TEST(Solver, SolutionOnConstraintsIdentityHessTest2) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0.5, 1.5}};
 	baseline.cost = 1.25;
+#ifndef NEW_INTERFACE
 	TestSolver(case_3, NqpTestSettingsDefault, baseline);
+#else
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
+    TestSolverDense(case_3, NqpTestSettingsDefaultNewInterface, baseline, "test2.txt");
+#endif
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest3) {
 	QPBaseline baseline;

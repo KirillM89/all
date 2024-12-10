@@ -22,7 +22,7 @@ template<class T, template <class ...> class M,
 std::enable_if_t<IsLogAble<T, M>::value, bool> = true> std::ostream& operator << (std::ostream& f, const M<T>& v) {
     #ifdef CPP_FORMAT
     f << std::setprecision(15);
-    f << "{" << SEP;
+    f << "{";
     #endif
     typename M<T>::const_iterator it;
     const std::size_t sz = v.size();

@@ -12,6 +12,7 @@ Core::Core():
     dualExitStatus(DualLoopExitStatus::UNKNOWN),
     primalExitStatus(PrimalLoopExitStatus::UNKNOWN),
     gamma(0),
+    gammaCorrection(0),
     styGamma(0),
     scaleFactorDB(1.0),
     rsNorm(0),
@@ -301,7 +302,7 @@ bool Core::MakeLineSearch() {
     }
     if (stepFound) {
         //primal_next = primal + step * (zp - primal)
-        double gammaCorrection = 0.0;
+        gammaCorrection = 0.0;
         for (unsg_t i = 0; i < nConstraints; ++i) {
             ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
             if (std::fabs(ws.primal[i]) < settings.nnlsPrimalZero) {
@@ -309,9 +310,7 @@ bool Core::MakeLineSearch() {
                 ws.activeConstraints.erase(i);
             }
         }
-        if (settings.minNNLSDualTol < 1.0e-10) {
-            gamma = std::fabs(gamma - gammaCorrection);
-        }
+        UpdateGammaOnPrimalIteration();
     }
     return stepFound || ws.negativeZp.empty();
 }
@@ -364,11 +363,21 @@ void Core::UnscaleD() {
         }
     }
 }
-
-
-void Core::UpdateGammaOnDualIteration() {
-
+void Core::UpdateGammaOnPrimalIteration() {
+    if (settings.gammaUpdate == true) {
+        if (settings.minNNLSDualTol < 1.0e-10) {
+            gamma = std::fabs(gamma - gammaCorrection);
+        }
+    }
 }
+void Core::UpdateGammaOnDualIteration() {
+    if (settings.gammaUpdate == true) {
+        if (dualTolerance < 1.0e-10) {
+            gamma += std::fabs(ws.s[newActiveIndex]);
+        }
+    }
+}
+
 void Core::ComputeCost() {
     cost = DotProduct(ws.c, ws.x);
     for (unsg_t i = 0; i < nVariables; ++i) {
@@ -473,7 +482,23 @@ void Core::SetIterationData() {
     uCallback->iterData.iteration = dualIteration;
     uCallback->iterData.newIndex = newActiveIndex;
     uCallback->iterData.singular = singularIndex == newActiveIndex;
+    uCallback->iterData.gamma = gamma;
     uCallback->ProcessData(2);
+}
+
+void Core::SetFinalData() {
+    uCallback->finalData.dualStatus = dualExitStatus;
+    uCallback->finalData.primalStatus = primalExitStatus;
+    uCallback->finalData.nIterations = output.nDualIterations;
+    uCallback->finalData.violations = output.violations;
+    if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
+        uCallback->finalData.cost = output.cost;
+        uCallback->finalData.x = output.x;
+        uCallback->finalData.lambda = output.lambda;
+        uCallback->finalData.lambdaLw = output.lambdaLw;
+        uCallback->finalData.lambdaUp = output.lambdaUp;
+    }
+    uCallback->ProcessData(3);
 }
 
 void Core::Solve() {
@@ -548,6 +573,7 @@ void Core::Solve() {
         ComputeCost();
     }
     FillOutput();
+    SetFinalData();
 }
 
 }
