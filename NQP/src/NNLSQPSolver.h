@@ -93,7 +93,7 @@ private:
     bool FullActiveSet();
     bool SkipCandidate(unsg_t indx);
     bool MakeLineSearch();
-    bool IsCandidateForNewActive(unsg_t index, double toCompare);
+    bool IsCandidateForNewActive(unsg_t index, double toCompare, bool skip = true);
     void SetDefaultSettings();
     void TimePoint(std::string& buf);
     void ScaleD();
@@ -115,6 +115,7 @@ private:
     void FillOutput();
     void SetIterationData();
     void SetFinalData();
+    void SetRptInterval();
     unsg_t SelectNewActiveComponent();
     unsg_t SolvePrimal();
     int UpdatePrimal();

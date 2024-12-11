@@ -112,6 +112,7 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
+    SetRptInterval();
     AllocateWs();
     dbScaler =  std::make_unique<DBScaler>(settings.dbScalerStrategy);
     timer->Start();
@@ -179,7 +180,23 @@ void Core::ComputeDualVariable() {
     styGamma = gamma + DotProduct(ws.s, ws.primal);
 }
 bool Core::SkipCandidate(unsg_t indx) {
-    if (rptInterval > 0) {
+    if (rptInterval == 1) {
+        unsg_t nNegative = 0;
+        for (auto dl : ws.dual) {
+            if (dl < 0.0) {
+                ++nNegative;
+            }
+        }
+        const unsg_t maxSize  = std::max(1U, nNegative);
+        const std::size_t coef = 1; // heuristic
+        bool isLongHistory = (coef * ws.addHistory.size() > maxSize);
+        if (isLongHistory) {
+            // the size of history is too big
+            // reset history and operate only with violated constraints
+            // like warm start
+            ws.addHistory.clear();
+            return false;
+        }
         return (std::find(ws.addHistory.begin(), ws.addHistory.end(), indx) != ws.addHistory.end());
     } else if (settings.actSetUpdtSettings.rejectSingular && singularIndex == indx) {
         return true;
@@ -189,21 +206,19 @@ bool Core::SkipCandidate(unsg_t indx) {
 }
 void Core::AddToActiveSet(unsg_t indx) {
     ws.activeConstraints.insert(indx);
-    if (rptInterval > 0) { // if rptInterval > 0 use history saving
-        if(ws.addHistory.size() >= rptInterval) {
-            ws.addHistory.pop_front();
-        }
-        ws.addHistory.push_back(indx);
-    }
+    ws.addHistory.push_back(indx);
 }
 void Core::RmvFromActiveSet(unsg_t indx) {
     ws.activeConstraints.erase(indx);
 }
 
-bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare) {
+bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare, bool skip) {
     bool res = false;
     const double dl = ws.dual[indx];
-    if (!SkipCandidate(indx) && (dl < dualTolerance && dl < toCompare)) {
+    if (skip && SkipCandidate(indx)) {
+        res = false;
+    }
+    else if ((dl < dualTolerance && dl < toCompare)) {
         newActiveIndex = indx;
         res = true;
     }
@@ -234,15 +249,13 @@ unsg_t Core::SelectNewActiveComponent() {
         }
     } else {
         for (unsg_t i = 0; i < nConstraints; ++i) {
-            if (IsCandidateForNewActive(i, newActive)) {
+            if (IsCandidateForNewActive(i, newActive, false)) {
                 newActive = ws.dual[i];
                 newFound = true;
             }
         }
     }
-    if (!newFound) { //finally check in indices to Skip
-        //TODO
-    }
+
     return newActiveIndex;
 }
 
@@ -433,6 +446,10 @@ void Core::ComputeDualityGap() {
     dualityGap = cost + fsb - dualValue;
 }
 
+void Core::SetRptInterval(){
+    rptInterval = settings.actSetUpdtSettings.rptInterval;
+}
+
 void Core::ComputeOrigSolution() {
     double sty = DotProduct(ws.s, ws.primal, ws.activeConstraints);
     double lambdaTerm = -1.0 / (gamma + sty);
@@ -486,6 +503,8 @@ void Core::SetIterationData() {
     uCallback->iterData.newIndex = newActiveIndex;
     uCallback->iterData.singular = singularIndex == newActiveIndex;
     uCallback->iterData.gamma = gamma;
+    uCallback->iterData.dualTol = dualTolerance;
+    uCallback->iterData.rsNorm = rsNorm;
     uCallback->ProcessData(2);
 }
 

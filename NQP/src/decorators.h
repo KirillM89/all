@@ -12,6 +12,8 @@ namespace QP_NNLS {
        std::vector<double>* zp;
        std::unordered_set<unsg_t>* activeSet;
        double gamma;
+       double dualTol;
+       double rsNorm;
        unsg_t newIndex;
        unsg_t iteration;
        bool singular;

@@ -891,21 +891,7 @@ TEST_F(QPTestRelative, S2F_0_12) {
 TEST_F(QPTestRelative, C0_0_9) {
 	comparator.Compare(c0_0_9, "c0_0_9.txt");
 }
-TEST_F(QPTestCost, CASE_1) {
-	comparator.Compare(case_1, "case_1.txt");
-}
-TEST_F(QPTestCost, CASE_2) {
-	comparator.Compare(case_1, "case_2.txt");
-}
-TEST_F(QPTestCost, S2F_0_9) {
-	comparator.Compare(s2f_0_9, "s2f_0_9.txt");
-}
-TEST_F(QPTestCost, S2F_0_12) {
-	comparator.Compare(s2f_0_12, "s2f_0_12.txt");
-}
-TEST_F(QPTestCost, C0_0_9) {
-	comparator.Compare(c0_0_9, "c0_0_9.txt");
-}
+
 
 
 

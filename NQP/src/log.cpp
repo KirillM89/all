@@ -70,7 +70,8 @@ namespace QP_NNLS {
             logger->dump("primal", *iterData.primal);
             logger->dump("dual", *iterData.dual);
             logger->message("new active component", iterData.newIndex,
-                            "isSingular", iterData.singular ? 1 : 0, "gamma", iterData.gamma);
+                            "isSingular", iterData.singular ? 1 : 0, "gamma", iterData.gamma,
+                            "dualTol", iterData.dualTol, "rsdNorm", iterData.rsNorm);
         }  else if (stage == 3) { // dump final data
             logger->SetStage("RESULTS");
             if (finalData.dualStatus == DualLoopExitStatus::INFEASIBILITY) {

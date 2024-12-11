@@ -60,7 +60,7 @@ enum class InitStageStatus {
 };
 
 struct ActiveSetUpdateSettings {
-    int rptInterval = -1;
+    int rptInterval = 1;
     bool rejectSingular = false;
     bool firstInactive = true;
 };
