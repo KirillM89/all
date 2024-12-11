@@ -486,7 +486,8 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
 	solver.Solve();
 #else
     QP_NNLS::QPNNLSDense solver;
-    solver.SetCallback(std::make_unique<Callback1>("HessParam.txt"));
+
+    solver.SetCallback(std::make_unique<Callback1>(settings.logFile));
     solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
     ASSERT_TRUE(solver.SetProblem(dproblem));
     solver.Solve();

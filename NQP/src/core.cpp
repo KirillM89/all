@@ -380,7 +380,6 @@ void Core::UpdateGammaOnDualIteration() {
         }
     }
 }
-
 void Core::ComputeCost() {
     cost = DotProduct(ws.c, ws.x);
     for (unsg_t i = 0; i < nVariables; ++i) {
