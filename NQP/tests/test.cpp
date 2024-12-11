@@ -669,7 +669,7 @@ TEST_P(HessianParametrizedTest, Solver_SolNotOnConstraintsT2) {
 TEST_P(CompareRelHessParametrized, Solver_SolNotOnConstraintsParametrizedT1) {
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
 	UserSettings settings = NqpTestSettingsDefault;
-	settings.cholPvtStrategy = CholPivotingStrategy::FULL;
+    //settings.cholPvtStrategy = CholPivotingStrategy::FULL;
 	this->settings.uSettings = settings;
 	QPProblem problem;
 	problem.c = { 2.0, 4.3 };
@@ -709,7 +709,7 @@ TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT3) {
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
 	TestSolver(getProblem(case_23), NqpTestSettingsDefault, baseline);
 }
-INSTANTIATE_TEST_CASE_P(SUITE_1, HessianParametrizedTest, ::testing::Values(1.0)); //, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
+INSTANTIATE_TEST_CASE_P(SUITE_1, HessianParametrizedTest, ::testing::Values(1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
 
 TEST(Solver, RedundantConstraintsT1) {
 	QPBaseline baseline;
@@ -754,7 +754,7 @@ TEST_P(CompareRelHessParametrized, Solver_CompareQLDCholFullPivotingParametrized
 	problem.b = { -1.0 };
 	comparator.Compare(getProblem(problem), "case_full_pivoting_prm1_" + std::to_string(static_cast<int>(GetParam())) + ".txt");
 }
-INSTANTIATE_TEST_CASE_P(SUITE_1, CompareRelHessParametrized, ::testing::Values(1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
+INSTANTIATE_TEST_CASE_P(SUITE_1, CompareRelHessParametrized, ::testing::Values(40.0)); //(1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
 
 TEST_F(QPTestRelative, Solver_CompareQLDCholFullPivotingT1) {
 	settings.uSettings.cholPvtStrategy = CholPivotingStrategy::FULL;

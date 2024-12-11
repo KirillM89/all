@@ -3,28 +3,11 @@
 #include <algorithm>
 namespace QP_NNLS {
 Core::Core():
-    nVariables(0),
-    nConstraints(0),
-    nEqConstraints(0),
-    newActiveIndex(0),
-    rptInterval(0),
-    singularIndex(0),
-    dualExitStatus(DualLoopExitStatus::UNKNOWN),
-    primalExitStatus(PrimalLoopExitStatus::UNKNOWN),
-    gamma(0),
-    gammaCorrection(0),
-    styGamma(0),
-    scaleFactorDB(1.0),
-    rsNorm(0),
-    newActive(0),
-    dualTolerance(std::numeric_limits<double>::min()),
-    dualityGap(std::numeric_limits<double>::max()),
-    cost(std::numeric_limits<double>::max()),
     dbScaler(nullptr),
     timer(std::make_unique<wcTimer>()),
     uCallback(std::make_unique<Callback>())
 {
-    ws.Clear();
+    ResetProblem();
     SetDefaultSettings();
 }
 void Core::WorkSpace::Clear() {
@@ -55,6 +38,21 @@ void Core::SetDefaultSettings() {
 }
 void Core::ResetProblem() {
     ws.Clear();
+    nVariables = 0;
+    nConstraints = 0;
+    nEqConstraints = 0;
+    newActiveIndex = std::numeric_limits<unsg_t>::max();
+    rptInterval = 0;
+    singularIndex = std::numeric_limits<unsg_t>::max();
+    dualIteration = 0;
+    gamma = 1.0;
+    styGamma = 0.0;
+    scaleFactorDB = 1.0;
+    rsNorm = std::numeric_limits<double>::max();
+    newActive = 0.0;
+    dualTolerance = std::numeric_limits<double>::min();
+    dualityGap = std::numeric_limits<double>::max();
+    cost = std::numeric_limits<double>::max();
 }
 void Core::Set(const CoreSettings& settings) {
     this->settings = settings;
@@ -287,7 +285,7 @@ unsg_t Core::SolvePrimal() {
                 ++i;
             }
         } else {
-            ws.zp = std::move(sol);
+            //ws.zp = std::move(sol);
         }
     }
     // TODO: check quality

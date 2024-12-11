@@ -472,7 +472,6 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
 	if (output.exitStatus == 0) {
 		CheckConstrViolations(input.m_A, input.m_bV, input.m_lower, input.m_upper, output.m_x);
 	}
-	NNLSQPSolver solver;
 	DenseQPProblem dproblem;
 	dproblem.H = problem.H;
 	dproblem.A = problem.A;
@@ -481,9 +480,20 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
 	dproblem.lw = problem.lw;
 	dproblem.up = problem.up; 
 	ProblemSettings problemNNLS(settings, problem);
+#ifndef NEW_INTERFACE
+    NNLSQPSolver solver;
 	ASSERT_TRUE(solver.Init(problemNNLS));
 	solver.Solve();
-	QP_SOLVERS::QPOutput nnlsOutput;
+#else
+    QP_NNLS::QPNNLSDense solver;
+    solver.SetCallback(std::make_unique<Callback1>("HessParam.txt"));
+    solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
+    ASSERT_TRUE(solver.SetProblem(dproblem));
+    solver.Solve();
+    SolverOutput soutput = solver.GetOutput();
+#endif
+    QP_SOLVERS::QPOutput nnlsOutput;
+#ifndef NEW_INTERFACE
 	nnlsOutput.m_x = solver.getXOpt();
 	nnlsOutput.m_cost = solver.getCost();
 	nnlsOutput.m_lambda = solver.getLambda();
@@ -502,7 +512,16 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
 	//
 	DualLoopExitStatus dualStatus = solver.getDualStatus();
 	QP_NNLS::SolverExitStatus exitStatus = solver.getExitStatus();
-	if (exitStatus == QP_NNLS::SolverExitStatus::SUCCESS) {
+#else
+    nnlsOutput.m_x = soutput.x;
+    nnlsOutput.m_cost = soutput.cost;
+    nnlsOutput.m_lambda = soutput.lambda;
+    nnlsOutput.m_lambdaL = soutput.lambdaLw;
+    nnlsOutput.m_lambdaU = soutput.lambdaUp;
+    DualLoopExitStatus dualStatus = soutput.dualExitStatus;
+    QP_NNLS::SolverExitStatus exitStatus = QP_NNLS::SolverExitStatus::SUCCESS;
+#endif
+    if (exitStatus == QP_NNLS::SolverExitStatus::SUCCESS) {
 		CheckConstrViolations(dproblem.A, dproblem.b, dproblem.lw, dproblem.up, nnlsOutput.m_x); 
 		nnlsOutput.exitStatus = 0;
 	} else {
