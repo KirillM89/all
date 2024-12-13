@@ -117,8 +117,12 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
     SetRptInterval();
     AllocateWs();
+    if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
+        lSolver = std::make_unique<CumulativeLDLTSolver>();
+    }
     dbScaler =  std::make_unique<DBScaler>(settings.dbScalerStrategy);
     timer->Start();
+
     if (settings.cholPvtStrategy == CholPivotingStrategy::NO_PIVOTING) {
         CholetskyOutput cholOutput;
         if(!ComputeCholFactorT(problem.H, ws.Chol, cholOutput)) {   // H = L_T * L

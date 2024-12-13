@@ -24,10 +24,10 @@ const LinSolverOutput& CumulativeLDLTSolver::Solve() {
     const matrix_t M(mA.begin(), mA.end());
     const std::vector<double> b(vB.begin(), vB.end());
     MMTbSolver mmtb;
-    mmtb.Solve(M, b);
+    int nDNegative = mmtb.Solve(M, b);
+    output.nDNagative = nDNegative;
+    output.solution = mmtb.GetSolution();
     return output;
 }
-
-
 
 }

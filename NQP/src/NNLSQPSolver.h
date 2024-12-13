@@ -10,6 +10,7 @@
 #include "timers.h"
 #include "utils.h"
 #include "decorators.h"
+#include "linSolvers.h"
 #ifndef NNLS_QP_SOLVER_H
 #define NNLS_QP_SOLVER_H
 
@@ -106,7 +107,6 @@ class Core {
         matrix_t CholInv;
         matrix_t MS;
         std::deque<unsg_t> addHistory;
-
         void Clear();
     };
 
@@ -148,6 +148,7 @@ private:
     std::unique_ptr<iDBScaler> dbScaler;
     std::unique_ptr<iTimer> timer;
     std::unique_ptr<Callback> uCallback;
+    std::unique_ptr<ILinSolver> lSolver;
     MMTbSolverDynamic linSolver;
     SolverOutput output;
     bool PrepareNNLS(const DenseQPProblem& problem);

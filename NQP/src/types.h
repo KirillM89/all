@@ -42,6 +42,11 @@ enum class DBScalerStrategy {
 	UNKNOWN
 };
 
+enum class LinSolverType {
+    CUMULATIVE_LDLT,
+    DYNAMIC_LDLT,
+};
+
 enum class CholPivotingStrategy {
 	NO_PIVOTING,
 	FULL,
@@ -60,7 +65,8 @@ enum class InitStageStatus {
 };
 
 struct LinSolverOutput {
-
+    unsg_t nDNagative = std::numeric_limits<unsg_t>::max(); // number of d<=0 in LDLT
+    std::vector<double> solution;
 };
 
 struct ActiveSetUpdateSettings {
@@ -70,6 +76,7 @@ struct ActiveSetUpdateSettings {
 };
 
 struct CoreSettings {
+    LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
     unsg_t nDualIterations = 100;
