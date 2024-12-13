@@ -59,6 +59,10 @@ enum class InitStageStatus {
     CHOLETSKY
 };
 
+struct LinSolverOutput {
+
+};
+
 struct ActiveSetUpdateSettings {
     int rptInterval = 1;
     bool rejectSingular = false;
