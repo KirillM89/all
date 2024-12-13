@@ -1,6 +1,5 @@
 #ifndef LINSOLVERS_H
 #define LINSOLVERS_H
-#include <unordered_map>
 #include "types.h"
 namespace QP_NNLS {
 class ILinSolver {
@@ -37,24 +36,35 @@ protected:
     std::vector<bool> activeSet;
     const matrix_t& M;
     const std::vector<double>& s;
+    LinSolverOutput output;
 
 };
 
 class CumulativeLDLTSolver: public CumulativeSolver {
+    // Solve linear system using custom LDLT decomposition
 public:
     CumulativeLDLTSolver() = delete;
     CumulativeLDLTSolver(const matrix_t& M, const std::vector<double>& s);
     virtual ~CumulativeLDLTSolver() override = default;
     const LinSolverOutput& Solve() override;
-protected:
-    LinSolverOutput output;
 };
+
+class CumulativeEGNSolver : public CumulativeSolver {
+    // Solve linear system using Eigen lib
+public:
+    CumulativeEGNSolver() = delete;
+    CumulativeEGNSolver(const matrix_t& M, const std::vector<double>& s);
+    virtual ~CumulativeEGNSolver() override = default;
+    const LinSolverOutput& Solve() override;
+protected:
+    void SolveByEGN(const matrix_t& A, const std::vector<double>& b);
+};
+
 
 class DynamicSolver : public ILinSolver {
     // Solver based on dynamically updated LDLT decomposition
     // Add / Delete methods recompute LDL
     // Solve() solves LDLT * x = b with already computed L and D
-
 };
 }
 #endif // LINSOLVERS_H
