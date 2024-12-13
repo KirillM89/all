@@ -65,8 +65,10 @@ enum class InitStageStatus {
 };
 
 struct LinSolverOutput {
-    unsg_t nDNagative = std::numeric_limits<unsg_t>::max(); // number of d<=0 in LDLT
+    bool emptyInput = false;
+    unsg_t nDNegative = std::numeric_limits<unsg_t>::max(); // number of d<=0 in LDLT
     std::vector<double> solution;
+    std::list<unsg_t> indices;
 };
 
 struct ActiveSetUpdateSettings {

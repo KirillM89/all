@@ -23,23 +23,28 @@ class CumulativeSolver: public ILinSolver {
     // Add / Delete methods constructs linear system
     // Solve() solves pre-constructed linear system
 public:
-    CumulativeSolver();
-    ~CumulativeSolver() override = default;
-    bool Add(const std::vector<double>& mp, double sp, unsg_t indx) override;
-    bool Delete(unsg_t indx) override;
-    void SetGamma(double gamma) override {this->gamma = gamma;}
+    CumulativeSolver() = delete;
+    CumulativeSolver(const matrix_t& M, const std::vector<double>& s);
+    virtual ~CumulativeSolver() override = default;
+    virtual bool Add(const std::vector<double>& mp, double sp, unsg_t indx) override;
+    virtual bool Delete(unsg_t indx) override;
+    virtual void SetGamma(double gamma) override {this->gamma = gamma;}
 protected:
+    const unsg_t nConstraints;
+    unsg_t nVariables;
+    unsg_t nActive;
     double gamma;
-    std::list<std::vector<double>> mA;
-    std::list<double> vB;
-    std::unordered_map<unsg_t, std::list<std::vector<double>>::iterator> indicesMA;
-    std::unordered_map<unsg_t, std::list<double>::iterator> indicesVB;
+    std::vector<bool> activeSet;
+    const matrix_t& M;
+    const std::vector<double>& s;
+
 };
 
 class CumulativeLDLTSolver: public CumulativeSolver {
 public:
-    CumulativeLDLTSolver() = default;
-    ~CumulativeLDLTSolver() override = default;
+    CumulativeLDLTSolver() = delete;
+    CumulativeLDLTSolver(const matrix_t& M, const std::vector<double>& s);
+    virtual ~CumulativeLDLTSolver() override = default;
     const LinSolverOutput& Solve() override;
 protected:
     LinSolverOutput output;

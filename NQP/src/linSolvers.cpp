@@ -1,32 +1,59 @@
 #include "linSolvers.h"
 #include "NNLSQPSolver.h" // MMTBSolver
 namespace QP_NNLS {
-CumulativeSolver::CumulativeSolver():
+CumulativeSolver::CumulativeSolver(const matrix_t& M,
+                                   const std::vector<double>& s ):
+    nConstraints(M.size()),
+    nVariables(0),
+    nActive(0),
     gamma(1.0),
-    mA{},
-    vB{},
-    indicesMA{},
-    indicesVB{}
-{}
+    M(M),
+    s(s)
+{
+    if (nConstraints > 0) {
+        nVariables = M.front().size();
+    }
+    activeSet.resize(nConstraints, false);
+}
 bool CumulativeSolver::Add(const std::vector<double>& mp, double sp, unsg_t indx) {
-    std::vector<double> vAdd(mp.size() + 1);
-    vAdd.back() = sp;
-    indicesMA[indx] = mA.insert(mA.end(), vAdd);
-    indicesVB[indx] = vB.insert(vB.end(), -sp);
+    activeSet[indx] = true;
+    ++nActive;
+    return true;
 }
 bool CumulativeSolver::Delete(unsg_t indx) {
-    mA.erase(indicesMA[indx]);
-    vB.erase(indicesVB[indx]);
-    indicesMA.erase(indx);
-    indicesVB.erase(indx);
+    activeSet[indx] = false;
+    if (nActive > 0) {
+        --nActive;
+    }
+    return true;
 }
+CumulativeLDLTSolver::CumulativeLDLTSolver(const matrix_t& M,
+                                           const std::vector<double>& s):
+    CumulativeSolver(M, s)
+{}
+
 const LinSolverOutput& CumulativeLDLTSolver::Solve() {
-    const matrix_t M(mA.begin(), mA.end());
-    const std::vector<double> b(vB.begin(), vB.end());
-    MMTbSolver mmtb;
-    int nDNegative = mmtb.Solve(M, b);
-    output.nDNagative = nDNegative;
-    output.solution = mmtb.GetSolution();
+    matrix_t m;
+    std::vector<double> b;
+    std::vector<double> vAdd;
+    output.indices.clear();
+    for (unsg_t i = 0; i < nConstraints; ++i) {
+        if (activeSet[i]) {
+            vAdd = M[i];
+            vAdd.push_back(s[i]);
+            m.push_back(vAdd);
+            b.push_back(-gamma * s[i]);
+            output.indices.push_back(i);
+        }
+    }
+    if (m.size() > 0) {
+        MMTbSolver mmtb;
+        int nDNegative = mmtb.Solve(m, b);
+        output.nDNegative = nDNegative;
+        output.solution = mmtb.GetSolution();
+    } else {
+        output.solution = std::vector<double>(nConstraints, 0.0);
+    }
     return output;
 }
 

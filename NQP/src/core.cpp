@@ -1,7 +1,6 @@
 #include "NNLSQPSolver.h"
 #include <cmath>
 #include <algorithm>
-//#define LDL_ADD_RMV
 namespace QP_NNLS {
 Core::Core():
     dbScaler(nullptr),
@@ -117,9 +116,6 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
     SetRptInterval();
     AllocateWs();
-    if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
-        lSolver = std::make_unique<CumulativeLDLTSolver>();
-    }
     dbScaler =  std::make_unique<DBScaler>(settings.dbScalerStrategy);
     timer->Start();
 
@@ -154,6 +150,9 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     VSum(MByV, ws.b, ws.s);
     scaleFactorDB = dbScaler -> Scale(ws.M, ws.s, settings.origPrimalFsb);
     ScaleD();
+    if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
+        lSolver = std::make_unique<CumulativeLDLTSolver>(ws.M, ws.s);
+    }
     return true;
 }
 void Core::TimePoint(std::string& buf) {
@@ -214,18 +213,11 @@ bool Core::SkipCandidate(unsg_t indx) {
 void Core::AddToActiveSet(unsg_t indx) {
     ws.activeConstraints.insert(indx);
     ws.addHistory.push_back(indx);
-#ifdef LDL_ADD_RMV
-    std::vector<double> v = ws.M[indx];
-    v.push_back(ws.s[indx]);
-    linSolver.Add(v, -ws.s[indx], gamma, indx);
-#endif
-
+    lSolver->Add(ws.M[indx], ws.s[indx], indx);
 }
 void Core::RmvFromActiveSet(unsg_t indx) {
     ws.activeConstraints.erase(indx);
-#ifdef LDL_ADD_RMV
-    linSolver.Delete(indx);
-#endif
+    lSolver->Delete(indx);
 }
 
 bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare, bool skip) {
@@ -271,62 +263,30 @@ unsg_t Core::SelectNewActiveComponent() {
             }
         }
     }
-
     return newActiveIndex;
 }
 
 unsg_t Core::SolvePrimal() {
     const std::size_t nActive = ws.activeConstraints.size();
-#ifdef LDL_ADD_RMV
-    unsg_t nDNegative = linSolver.Solve();
-#else
-    matrix_t M{};
-    std::vector<double> s{};
-    // [M s] * [M_T / s_T] = -gamma * s
-    if (nActive > 0) {
-        M.resize(nActive);
-        s.resize(nActive);
-        std::size_t i = 0;
-        for (auto indx: ws.activeConstraints ) {
-            M[i] = ws.M[indx];
-            s[i]= -gamma * ws.s[indx];
-            M[i].push_back(ws.s[indx]);
-            ++i;
-        }
-    } else {
-        M.resize(nConstraints);
-        s.resize(nConstraints);
-        for (int i = 0; i < nConstraints; ++i) {
-            M[i] = {ws.s[i]};
-            s[i] = -gamma * ws.s[i];
-        }
-    }
-    MMTbSolver linSolver;
-    int nDNegative =linSolver.Solve(M, s);
-#endif
+    lSolver->SetGamma(gamma);
+    const LinSolverOutput& output = lSolver -> Solve();
+    std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
     if (!settings.actSetUpdtSettings.rejectSingular) {
-        const auto& sol= linSolver.GetSolution();
-        std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
+        //const auto& sol= linSolver.GetSolution();;
         ws.negativeZp.clear();
         std::size_t i = 0;
         if (nActive > 0) {
-#ifdef LDL_ADD_RMV
-            for (auto indx: linSolver.GetIndices()) {
-#else
-            for (auto indx: ws.activeConstraints) {
-#endif
-                ws.zp[indx] = sol[i];
-                if (sol[i] < settings.nnlsPrimalZero) {
+            for (auto indx: output.indices) {
+                ws.zp[indx] = output.solution[i];
+                if (output.solution[i] < settings.nnlsPrimalZero) {
                     ws.negativeZp.insert(indx);
                 }
                 ++i;
             }
-        } else {
-            //ws.zp = std::move(sol);
         }
     }
     // TODO: check quality
-    return nDNegative;
+    return output.nDNegative;
 }
 
 bool Core::MakeLineSearch() {
@@ -347,7 +307,7 @@ bool Core::MakeLineSearch() {
             ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
             if (std::fabs(ws.primal[i]) < settings.prLtZero) {
                 gammaCorrection += std::fabs(ws.s[i]);
-                ws.activeConstraints.erase(i);
+                RmvFromActiveSet(i);
             }
         }
         UpdateGammaOnPrimalIteration();
