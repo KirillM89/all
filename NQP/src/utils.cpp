@@ -181,7 +181,7 @@ namespace QP_NNLS {
 		}
 	}
 
-    void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::unordered_set<unsg_t>& activesetIndices, std::vector<double>& res) {
+    void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::set<unsg_t>& activesetIndices, std::vector<double>& res) {
         //MT*v on active set
         const std::size_t nrows = M.size();
         if (nrows == 0) {
@@ -497,7 +497,7 @@ namespace QP_NNLS {
 		}
 		return res;
 	}
-    double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::unordered_set<unsg_t>& activeSetIndices) {
+    double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::set<unsg_t>& activeSetIndices) {
         double res = 0.0;
         for (auto iAct: activeSetIndices) {
             res += v1[iAct] * v2[iAct];

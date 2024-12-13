@@ -1,6 +1,7 @@
 #include "NNLSQPSolver.h"
 #include <cmath>
 #include <algorithm>
+//#define LDL_ADD_RMV
 namespace QP_NNLS {
 Core::Core():
     dbScaler(nullptr),
@@ -27,6 +28,7 @@ void Core::WorkSpace::Clear() {
     pmt.clear();
     H.clear();
     M.clear();
+    MS.clear();
     Jac.clear();
     Chol.clear();
     CholInv.clear();
@@ -70,6 +72,7 @@ bool Core::InitProblem(const DenseQPProblem &problem) {
     uCallback->initData.s = ws.s;
     uCallback->initData.c = ws.c;
     uCallback->initData.b = ws.b;
+    uCallback->initData.scaleDB = scaleFactorDB;
     uCallback -> ProcessData(1);
     return stat;
 }
@@ -207,9 +210,18 @@ bool Core::SkipCandidate(unsg_t indx) {
 void Core::AddToActiveSet(unsg_t indx) {
     ws.activeConstraints.insert(indx);
     ws.addHistory.push_back(indx);
+#ifdef LDL_ADD_RMV
+    std::vector<double> v = ws.M[indx];
+    v.push_back(ws.s[indx]);
+    linSolver.Add(v, -ws.s[indx], gamma, indx);
+#endif
+
 }
 void Core::RmvFromActiveSet(unsg_t indx) {
     ws.activeConstraints.erase(indx);
+#ifdef LDL_ADD_RMV
+    linSolver.Delete(indx);
+#endif
 }
 
 bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare, bool skip) {
@@ -261,6 +273,9 @@ unsg_t Core::SelectNewActiveComponent() {
 
 unsg_t Core::SolvePrimal() {
     const std::size_t nActive = ws.activeConstraints.size();
+#ifdef LDL_ADD_RMV
+    unsg_t nDNegative = linSolver.Solve();
+#else
     matrix_t M{};
     std::vector<double> s{};
     // [M s] * [M_T / s_T] = -gamma * s
@@ -282,15 +297,20 @@ unsg_t Core::SolvePrimal() {
             s[i] = -gamma * ws.s[i];
         }
     }
-    MMTbSolver mmtb;
-    int nDNegative = mmtb.Solve(M, s);
+    MMTbSolver linSolver;
+    int nDNegative =linSolver.Solve(M, s);
+#endif
     if (!settings.actSetUpdtSettings.rejectSingular) {
-        const auto& sol= mmtb.GetSolution();
+        const auto& sol= linSolver.GetSolution();
         std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
         ws.negativeZp.clear();
         std::size_t i = 0;
         if (nActive > 0) {
+#ifdef LDL_ADD_RMV
+            for (auto indx: linSolver.GetIndices()) {
+#else
             for (auto indx: ws.activeConstraints) {
+#endif
                 ws.zp[indx] = sol[i];
                 if (sol[i] < settings.nnlsPrimalZero) {
                     ws.negativeZp.insert(indx);
@@ -381,7 +401,7 @@ void Core::UnscaleD() {
 }
 void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
-        if (settings.minNNLSDualTol < 1.0e-10) {
+        if (dualTolerance < 1.0e-10) {
             gamma = std::fabs(gamma - gammaCorrection);
         }
     }
@@ -495,6 +515,7 @@ void Core::FillOutput() {
 
 void Core::SetIterationData() {
     uCallback->iterData.activeSet = &ws.activeConstraints;
+    uCallback->iterData.activeSetHistory = &ws.addHistory;
     uCallback->iterData.primal = &ws.primal;
     uCallback->iterData.dual = &ws.dual;
     uCallback->iterData.violations = &ws.violations;
@@ -545,8 +566,8 @@ void Core::Solve() {
             dualExitStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
             break;
         }
-        AddToActiveSet(newActiveIndex);
         UpdateGammaOnDualIteration();
+        AddToActiveSet(newActiveIndex);
         unsg_t primalIteration = 0;
         primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
         singularIndex = nConstraints;

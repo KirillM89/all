@@ -3,6 +3,7 @@
 #define NNLS_QP_SOLVER_UTILS_H
 #include <cassert>
 #include <unordered_set>
+#include <set>
 #include "types.h"
 namespace QP_NNLS {
 
@@ -18,7 +19,7 @@ namespace QP_NNLS {
 
 	void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::vector<int>& activesetIndices, std::vector<double>& MTv); // M_T * v on active set
 
-    void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::unordered_set<unsg_t>& activesetIndices, std::vector<double>& MTv); // M_T * v on active set
+    void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::set<unsg_t>& activesetIndices, std::vector<double>& MTv); // M_T * v on active set
 
 	void M1M2T(const matrix_t& M1, const matrix_t& M2, matrix_t& MMT); // MMT = M1 * M2_T
 
@@ -40,7 +41,7 @@ namespace QP_NNLS {
 
 	double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2,  const std::vector<int>& activeSetIndices); // <v1,v2> for active set indices 
 
-    double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2,  const std::unordered_set<unsg_t>& activesetIndices); // <v1,v2> for active set indices
+    double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2,  const std::set<unsg_t>& activesetIndices); // <v1,v2> for active set indices
 
 	void InvertByGauss(const matrix_t& M, matrix_t& Minv); // invert matrix M using Gauss Elimination with pivoting, M_inv must be filled with zeros in advance
 

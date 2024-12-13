@@ -2,15 +2,18 @@
 #define QP_NNLS_DECORATORS_H
 #include <memory>
 #include <vector>
+#include <deque>
 #include <unordered_set>
+#include <set>
 #include "types.h"
 namespace QP_NNLS {
     struct IterationData {
+       std::deque<unsg_t>* activeSetHistory;
        std::vector<double>* dual;
        std::vector<double>* primal;
        std::vector<double>* violations;
        std::vector<double>* zp;
-       std::unordered_set<unsg_t>* activeSet;
+       std::set<unsg_t>* activeSet;
        double gamma;
        double dualTol;
        double rsNorm;
@@ -32,7 +35,7 @@ namespace QP_NNLS {
     };
 
     struct InitializationData {
-        double dbSacleFactor;
+        double scaleDB;
         std::string tChol;
         std::string tInv;
         std::string tM;

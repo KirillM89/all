@@ -882,6 +882,11 @@ namespace QP_NNLS {
 
 	void LDL::Add(const std::vector<double>& row) {
 		const int mSize = static_cast<int>(A.size());
+        if (mSize == 0) {
+            Set({row});
+            Compute();
+            return;
+        }
 		std::vector<double>b(mSize, 0.0); // b=A*rowT
 		Mult(A, row, b);
 		std::vector<double> l = b;
@@ -1007,7 +1012,7 @@ namespace QP_NNLS {
 		D[curIndex] = d;
 	}
 	double LDL::getARowNormSquared(int row) const {
-		double norm2 = 0;
+        double norm2 = 0.0;
 		for (int i = 0; i < dimC; ++i) {
 			norm2 += A[row][i] * A[row][i];
 		}
@@ -1096,6 +1101,72 @@ namespace QP_NNLS {
 	int MMTbSolver::nDZero() {
 		return ndzero;
 	}
+
+    void MMTbSolverDynamic::Add(const std::vector<double>& v, double b, double gamma, unsg_t indx) {
+        ldl.Add(v);
+        vB.push_back(b);
+        //positions[indx] = activeSet.size();
+        activeSet.push_back(indx);
+        this->gamma = gamma;
+    }
+    bool MMTbSolverDynamic::Delete(unsg_t row) {
+        if (vB.size() <= row + 1) {
+            return false;
+        }
+        ldl.Remove(row);
+        vB.erase(vB.begin() + row);
+        auto it = std::find(activeSet.begin(), activeSet.end(), row);
+        activeSet.erase(it);
+       // positions.erase(row);
+        return true;
+    }
+    unsg_t MMTbSolverDynamic::Solve() {
+        //ldl.Compute();
+        forward.resize(ldl.GetD().size(), 0.0);
+        backward.resize(ldl.GetD().size(), 0.0);
+        ndzero = 0;
+        std::vector<int> dzeroIndices(M.size(), -1);
+        int j = 0;
+        for (int i = 0; i < M.size(); ++i) {
+            if (std::fabs(ldl.GetD()[i]) < zeroTol) {
+                ndzero += 1;
+                dzeroIndices[j++] = i;
+            }
+        }
+        std::vector<double> b = vB;
+        for (auto & el: b ) {
+            el *= gamma;
+        }
+        SolveForward(ldl.GetL(), b);
+        SolveBackward(ldl.GetD(), ldl.GetL());
+        return ndzero;
+    }
+    void MMTbSolverDynamic::SolveForward(const matrix_t& L, const std::vector<double>& b) {
+        const int n = b.size();
+        for (int i = 0; i < n; ++i) {
+            double sum = 0.0;
+            for (int j = 0; j < i; ++j) {
+                sum += L[i][j] * forward[j];
+            }
+            forward[i] = b[i] - sum;
+        }
+    }
+    void MMTbSolverDynamic::SolveBackward(const std::vector<double>& D, const matrix_t& L) {
+        const int n = forward.size();
+        for (int i = n - 1; i >= 0; --i) {
+            double sum = 0.0;
+            for (int j = i + 1; j < n; ++j) {
+                sum += L[j][i] * D[i] * backward[j];
+            }
+            backward[i] = std::fabs(D[i]) < zeroTol ? 0.0 : (forward[i] - sum) / D[i];
+        }
+    }
+
+    const std::vector<double>& MMTbSolverDynamic::GetSolution() {
+        return backward;
+    }
+
+
     DBScaler::DBScaler(DBScalerStrategy strategy):
 		scaleStrategy(strategy)
 	{}
@@ -1183,6 +1254,7 @@ namespace QP_NNLS {
 			double sBalanceFactor = maxSComponent / minSComponent;
 		}
         return 1.0;
-	}
+    }
+
 
 }

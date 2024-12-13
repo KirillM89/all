@@ -4,6 +4,7 @@
 #include <fstream>
 #include <type_traits>
 #include <iomanip>
+#include <set>
 #include "types.h"
 #include "decorators.h"
 #define CPP_FORMAT
@@ -16,6 +17,12 @@ template <class T> struct IsLogAble <T, std::vector> {
     static const bool value = true;
 };
 template <class T> struct IsLogAble <T, std::unordered_set> {
+    static const bool value = true;
+};
+template <class T> struct IsLogAble <T, std::deque> {
+    static const bool value = true;
+};
+template <class T> struct IsLogAble <T, std::set> {
     static const bool value = true;
 };
 template<class T, template <class ...> class M,

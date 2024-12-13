@@ -63,9 +63,11 @@ namespace QP_NNLS {
             logger->message("t Chol", initData.tChol);
             logger->message("t Inv", initData.tInv);
             logger->message("t M", initData.tM);
+            logger->message("scale factor DB", initData.scaleDB);
         } else if (stage == 2) { // dump iteration data
             logger->message("---ITERATION---", iterData.iteration);
             logger->dump("active set", *iterData.activeSet);
+            logger->dump("history", *iterData.activeSetHistory);
             logger->dump("zp", *iterData.zp);
             logger->dump("primal", *iterData.primal);
             logger->dump("dual", *iterData.dual);
