@@ -148,10 +148,13 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     std::vector<double> MByV(nConstraints);
     Mult(ws.M, ws.v, MByV);                // M * v nConstraints
     VSum(MByV, ws.b, ws.s);
-    scaleFactorDB = dbScaler -> Scale(ws.M, ws.s, settings.origPrimalFsb);
+    scaleFactorDB = 1.0e-7; // dbScaler -> Scale(ws.M, ws.s, settings.origPrimalFsb);
+    settings.origPrimalFsb *= scaleFactorDB;
     ScaleD();
     if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
         lSolver = std::make_unique<CumulativeLDLTSolver>(ws.M, ws.s);
+    } else if (settings.linSolverType == LinSolverType::CUMULATIVE_EG_LDLT) {
+        lSolver = std::make_unique<CumulativeEGNSolver>(ws.M, ws.s);
     }
     return true;
 }
@@ -181,7 +184,7 @@ void Core::ComputeDualVariable() {
     }
     // correction of dual variables
     for (auto& indx : ws.activeConstraints) {
-        ws.dual[indx] = 0.0;
+        //ws.dual[indx] = 0.0;
     }
     styGamma = gamma + DotProduct(ws.s, ws.primal);
 }
@@ -194,7 +197,7 @@ bool Core::SkipCandidate(unsg_t indx) {
             }
         }
         const unsg_t maxSize  = std::max(1U, nNegative);
-        const std::size_t coef = 1; // heuristic
+        const std::size_t coef = 0.5; // heuristic
         bool isLongHistory = (coef * ws.addHistory.size() > maxSize);
         if (isLongHistory) {
             // the size of history is too big
@@ -306,7 +309,9 @@ bool Core::MakeLineSearch() {
         for (unsg_t i = 0; i < nConstraints; ++i) {
             ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
             if (std::fabs(ws.primal[i]) < settings.prLtZero) {
-                gammaCorrection += std::fabs(ws.s[i]);
+                if (ws.activeConstraints.find(i) != ws.activeConstraints.end()) {
+                    gammaCorrection += std::fabs(ws.s[i]);
+                }
                 RmvFromActiveSet(i);
             }
         }
@@ -365,16 +370,16 @@ void Core::UnscaleD() {
 }
 void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
-        if (dualTolerance < 1.0e-10) {
-            gamma = std::fabs(gamma - gammaCorrection);
-        }
+        //if (dualTolerance < 1.0e-10) {
+            gamma = sqrt(std::fabs(gamma - gammaCorrection));
+        //}
     }
 }
 void Core::UpdateGammaOnDualIteration() {
     if (settings.gammaUpdate == true) {
-        if (dualTolerance < 1.0e-10) {
-            gamma += std::fabs(ws.s[newActiveIndex]);
-        }
+       // if (dualTolerance < 1.0e-10) {
+            gamma += sqrt(std::fabs(ws.s[newActiveIndex]));
+       // }
     }
 }
 void Core::ComputeCost() {

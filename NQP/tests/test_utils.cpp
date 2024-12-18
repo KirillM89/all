@@ -470,68 +470,32 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
 		return;
 	}
 	if (output.exitStatus == 0) {
+        std::cout << "CONSTRAINTS VIOLATIONS BASELINE BEGIN" << std::endl;
 		CheckConstrViolations(input.m_A, input.m_bV, input.m_lower, input.m_upper, output.m_x);
-	}
-	DenseQPProblem dproblem;
-	dproblem.H = problem.H;
-	dproblem.A = problem.A;
-	dproblem.b = problem.b;
-	dproblem.c = problem.c;
-	dproblem.lw = problem.lw;
-	dproblem.up = problem.up; 
-	ProblemSettings problemNNLS(settings, problem);
-#ifndef NEW_INTERFACE
-    NNLSQPSolver solver;
-	ASSERT_TRUE(solver.Init(problemNNLS));
-	solver.Solve();
-#else
+        std::cout << "CONSTRAINTS VIOLATIONS BASELINE END" << std::endl;
+	} 
     QP_NNLS::QPNNLSDense solver;
-
     solver.SetCallback(std::make_unique<Callback1>(settings.logFile));
     solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
-    ASSERT_TRUE(solver.SetProblem(dproblem));
+    ASSERT_TRUE(solver.SetProblem(problem));
     solver.Solve();
     SolverOutput soutput = solver.GetOutput();
-#endif
     QP_SOLVERS::QPOutput nnlsOutput;
-#ifndef NEW_INTERFACE
-	nnlsOutput.m_x = solver.getXOpt();
-	nnlsOutput.m_cost = solver.getCost();
-	nnlsOutput.m_lambda = solver.getLambda();
-	//
-	assert(nnlsOutput.m_lambda.size() == problem.A.size() || nnlsOutput.m_lambda.size() == problem.A.size() + 2 * nnlsOutput.m_x.size() );
-	if (nnlsOutput.m_lambda.size() > problem.A.size()) {
-		int nX = output.m_x.size();
-		nnlsOutput.m_lambdaU.resize(nX);
-		nnlsOutput.m_lambdaL.resize(nX);
-		for (int i = 0; i < nX; ++i) {
-			nnlsOutput.m_lambdaU[i] = nnlsOutput.m_lambda[problem.A.size() + 2 * i];
-            nnlsOutput.m_lambdaL[i] = nnlsOutput.m_lambda[problem.A.size() + 2 * i + 1];
-		}
-        nnlsOutput.m_lambda.resize(problem.A.size());
-	}
-	//
-	DualLoopExitStatus dualStatus = solver.getDualStatus();
-	QP_NNLS::SolverExitStatus exitStatus = solver.getExitStatus();
-#else
     nnlsOutput.m_x = soutput.x;
     nnlsOutput.m_cost = soutput.cost;
     nnlsOutput.m_lambda = soutput.lambda;
     nnlsOutput.m_lambdaL = soutput.lambdaLw;
     nnlsOutput.m_lambdaU = soutput.lambdaUp;
     DualLoopExitStatus dualStatus = soutput.dualExitStatus;
-    QP_NNLS::SolverExitStatus exitStatus = QP_NNLS::SolverExitStatus::SUCCESS;
-#endif
-    if (exitStatus == QP_NNLS::SolverExitStatus::SUCCESS) {
-		CheckConstrViolations(dproblem.A, dproblem.b, dproblem.lw, dproblem.up, nnlsOutput.m_x); 
+
+    ASSERT_NE(dualStatus, DualLoopExitStatus::UNKNOWN);
+    if (dualStatus != DualLoopExitStatus::INFEASIBILITY) {
+        std::cout << "CONSTRAINTS VIOLATIONS TESTING BEGIN" << std::endl;
+        CheckConstrViolations(problem.A, problem.b, problem.lw, problem.up, nnlsOutput.m_x);
+        std::cout << "CONSTRAINTS VIOLATIONS TESTING END" << std::endl;
 		nnlsOutput.exitStatus = 0;
 	} else {
-		ASSERT_NE(dualStatus, DualLoopExitStatus::UNKNOWN);
-		if (dualStatus != DualLoopExitStatus::INFEASIBILITY) { // infeasibility is the only critical status
-			nnlsOutput.exitStatus = 0;
-		} else {
-			nnlsOutput.exitStatus = 1;
-		}
+        nnlsOutput.exitStatus = 1;
 	}
 	ProcessResults(output, nnlsOutput);
 }
@@ -623,6 +587,7 @@ void QPSolverComparator::ProcessResults(const QP_SOLVERS::QPOutput& outputSolver
 	}
     // compare with baseline
     if (compareType == CompareType::COST) {
+        std::cout << "COMPARE COST" << std::endl;
 		EXPECT_LE(cost_nnls, cost + costTol);
 		return;
 	}

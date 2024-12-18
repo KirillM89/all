@@ -21,9 +21,11 @@ bool CumulativeSolver::Add(const std::vector<double>& mp, double sp, unsg_t indx
     return true;
 }
 bool CumulativeSolver::Delete(unsg_t indx) {
-    activeSet[indx] = false;
-    if (nActive > 0) {
-        --nActive;
+    if (activeSet[indx]) {
+        activeSet[indx] = false;
+        if (nActive > 0) {
+            --nActive;
+        }
     }
     return true;
 }
@@ -57,27 +59,35 @@ const LinSolverOutput& CumulativeLDLTSolver::Solve() {
     return output;
 }
 
+CumulativeEGNSolver::CumulativeEGNSolver(const matrix_t& M,
+                                         const std::vector<double>& s):
+    CumulativeSolver(M, s)
+{}
+
 const LinSolverOutput& CumulativeEGNSolver::Solve() {
+    output.indices.clear();
     if (nActive  == 0) {
-        output.indices.clear();
         output.solution =  std::vector<double>(nConstraints, 0.0);
     } else {
-        matrix_t A(nActive, std::vector<double>(nActive, 0.0));
-        std::vector<double> b(nActive);
+        Eigen::MatrixXd A(nActive, nActive);
+        Eigen::VectorXd b(nActive);
+        output.solution = std::vector<double>(nActive, 0.0);
         unsg_t ii = 0;
         for (unsg_t i = 0; i < nConstraints; ++i) {
             if (activeSet[i]) {
+                output.indices.push_back(i);
                 unsg_t jj = 0;
                 for (unsg_t c = 0; c < nConstraints; ++c) {
                     if (activeSet[c]) {
-                        A[ii][jj] = 0.0;
+                        A(ii, jj) = 0.0;
                         for (unsg_t j = 0; j < nVariables; ++j) {
-                            A[ii][jj] += (M[ii][j] * M[c][j] + s[ii] * s[jj]);
+                            A(ii, jj) += (M[i][j] * M[c][j]);
                         }
+                        A(ii, jj) += s[i] * s[c];
+                        ++jj;
                     }
-                    ++jj;
                 }
-                b[ii] = -gamma * s[i];
+                b(ii) = -gamma * s[i];
                 ++ii;
             }
         }
@@ -86,7 +96,10 @@ const LinSolverOutput& CumulativeEGNSolver::Solve() {
     return output;
 }
 
-void CumulativeEGNSolver::SolveByEGN(const matrix_t& A, const std::vector<double>& b) {
-
+void CumulativeEGNSolver::SolveByEGN(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+    Eigen::VectorXd r = A.ldlt().solve(b);
+    for (unsg_t i = 0; i < nActive; ++i) {
+        output.solution[i] = r[i];
+    }
 }
 } //namespace QP_NNLS

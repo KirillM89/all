@@ -834,62 +834,75 @@ TEST_F(QPTestRelative, Solver_CompareQLDCholFullPivotingT3) {
 	}
 	comparator.Compare(problem, "chol_full_pivoting_t3.txt");
 }
-TEST_F(QPTestRelative, CASE_1) {
+#define QPTest QPTestCost
+TEST_F(QPTest, CASE_1) {
 	comparator.Compare(case_1, "case_1.txt");
 }
-TEST_F(QPTestRelative, CASE_2) {
+TEST_F(QPTest, CASE_2) {
 	comparator.Compare(case_2, "case_2.txt");
 }
-TEST_F(QPTestRelative, CASE_3) {
+TEST_F(QPTest, CASE_3) {
 	comparator.Compare(case_3, "case_3.txt");
 }
-TEST_F(QPTestRelative, CASE_4) {
+TEST_F(QPTest, CASE_4) {
 	comparator.Compare(case_4, "case_4.txt");
 }
-TEST_F(QPTestRelative, CASE_5) {
+TEST_F(QPTest, CASE_5) {
 	comparator.Compare(case_5, "case_5.txt");
 }
-TEST_F(QPTestRelative, CASE_6) {
+TEST_F(QPTest, CASE_6) {
 	comparator.Compare(case_6, "case_6.txt");
 }
-TEST_F(QPTestRelative, CASE_7) {
+TEST_F(QPTest, CASE_7) {
 	comparator.Compare(case_7, "case_7.txt");
 }
-TEST_F(QPTestRelative, CASE_8) {
+TEST_F(QPTest, CASE_8) {
 	comparator.Compare(case_8, "case_8.txt");
 }
-TEST_F(QPTestRelative, CASE_9) {
+TEST_F(QPTest, CASE_9) {
 	comparator.Compare(case_9, "case_9.txt");
 }
-TEST_F(QPTestRelative, CASE_10) {
+TEST_F(QPTest, CASE_10) {
 	comparator.Compare(case_10, "case_10.txt");
 }
-TEST_F(QPTestRelative, CASE_11) {
+TEST_F(QPTest, CASE_11) {
 	comparator.Compare(case_11, "case_11.txt");
 }
-TEST_F(QPTestRelative, CASE_12) {
+TEST_F(QPTest, CASE_12) {
 	comparator.Compare(case_12, "case_12.txt");
 }
-TEST_F(QPTestRelative, CASE_13) {
+TEST_F(QPTest, CASE_13) {
 	comparator.Compare(case_13, "case_13.txt");
 }
-TEST_F(QPTestRelative, CASE_14) {
+TEST_F(QPTest, CASE_14) {
 	comparator.Compare(case_14, "case_14.txt");
 }
-TEST_F(QPTestRelative, CASE_15) {
+TEST_F(QPTest, CASE_15) {
 	comparator.Compare(case_15, "case_15.txt");
 }
-TEST_F(QPTestRelative, CASE_16) {
+TEST_F(QPTest, CASE_16) {
 	comparator.Compare(case_16, "case_16.txt");
 }
-TEST_F(QPTestRelative, S2F_0_9) {
+TEST_F(QPTest, S2F_0_9) {
 	comparator.Compare(s2f_0_9, "s2f_0_9.txt");
 }
-TEST_F(QPTestRelative, S2F_0_12) {
+TEST_F(QPTest, S2F_0_12) {
 	comparator.Compare(s2f_0_12, "s2f_0_12.txt");
 }
-TEST_F(QPTestRelative, C0_0_9) {
+TEST_F(QPTest, C0_0_9) {
 	comparator.Compare(c0_0_9, "c0_0_9.txt");
+}
+TEST_F(QPTest, C0_0_9_RELAXED1) {
+    comparator.Compare(c0_0_9_relaxed1, "c0_0_9_rlx1.txt");
+}
+TEST_F(QPTest, C0_0_9_RELAXED2) {
+    comparator.Compare(c0_0_9_relaxed2, "c0_0_9_rlx2.txt");
+}
+TEST_F(QPTest, C0_0_9_RELAXED3) {
+    comparator.Compare(c0_0_9_relaxed3, "c0_0_9_rlx3.txt");
+}
+TEST_F(QPTest, C0_0_9_BOUNDS) {
+    comparator.Compare(c0_0_9_bounds, "c0_0_9_bnds.txt");
 }
 
 

@@ -1,6 +1,8 @@
 #ifndef LINSOLVERS_H
 #define LINSOLVERS_H
 #include "types.h"
+#include <Eigen/Core>
+#include <Eigen/Dense>
 namespace QP_NNLS {
 class ILinSolver {
     // Interface for linear solver
@@ -57,7 +59,7 @@ public:
     virtual ~CumulativeEGNSolver() override = default;
     const LinSolverOutput& Solve() override;
 protected:
-    void SolveByEGN(const matrix_t& A, const std::vector<double>& b);
+    void SolveByEGN(const Eigen::MatrixXd& A, const Eigen::VectorXd& b);
 };
 
 

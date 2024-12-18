@@ -11,7 +11,7 @@
 static std::random_device rd;  // Will be used to obtain a seed for the random number engine
 static std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 enum class CompareType {
-	RELATIVE, 		// compare all the output values   abs((value[i] - baseline[i]) / baseline[i]) < tol
+    RELATIVE = 0, 		// compare all the output values   abs((value[i] - baseline[i]) / baseline[i]) < tol
 	STRICT, 		// compare all the output values   isSame(value[i], baseline[i], tol)  
 	COST, 			// success if final cost <= baseline cost + tol
 };
@@ -225,7 +225,6 @@ class QPTestBase {
 protected:
 	QPTestBase() {
 		settings.uSettings.logLevel = 3;
-		comparator.Set(settings);
 	}
 	void Set(const CompareSettings& settings) { this->settings = settings;}
 	QPBMComparator comparator;
@@ -235,12 +234,14 @@ class QPTestRelative: public QPTestBase, public::testing::Test {
 protected:
 	QPTestRelative() {
 		settings.compareType = CompareType::RELATIVE;
+        comparator.Set(settings);
 	}
 };
 class QPTestCost: public QPTestBase, public ::testing::Test {
 protected:
-	QPTestCost() {
+    QPTestCost() {
 		settings.compareType = CompareType::COST;
+        comparator.Set(settings);
 	}
 };
 class CompareRelHessParametrized : public QPTestBase, public HessianParametrizedTest {

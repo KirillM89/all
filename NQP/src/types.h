@@ -43,7 +43,8 @@ enum class DBScalerStrategy {
 };
 
 enum class LinSolverType {
-    CUMULATIVE_LDLT,
+    CUMULATIVE_LDLT = 0,
+    CUMULATIVE_EG_LDLT,
     DYNAMIC_LDLT,
 };
 
@@ -72,16 +73,17 @@ struct LinSolverOutput {
 };
 
 struct ActiveSetUpdateSettings {
-    int rptInterval = 1;
+    int rptInterval = 0;
     bool rejectSingular = false;
     bool firstInactive = true;
 };
 
 struct CoreSettings {
     LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
+    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
-    unsg_t nDualIterations = 100;
+    unsg_t nDualIterations = 200;
     unsg_t nPrimalIterations = 100;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
