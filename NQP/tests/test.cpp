@@ -2,10 +2,56 @@
 #include "test_utils.h"
 #include "test_data.h"
 #include "NNLSQPSolver.h"
+#include "TxtParser.h"
 #include <algorithm>
+#include <string>
 
 using namespace QP_NNLS;
 using namespace QP_NNLS_TEST_DATA;
+using namespace TXT_QP_PARSER;
+const std::string TxtQpRoot = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
+
+TEST(TxtParserTests, T1) {
+    TxtParser parser;
+    bool status = false;
+    DenseQPProblem problem = parser.Parse(TxtQpRoot + "QPTEST.txt", status);
+    ASSERT_TRUE(status);
+    ASSERT_EQ(problem.H.size(), 2);
+    for (const auto& row : problem.H) {
+        ASSERT_EQ(row.size(), 2);
+    }
+    ASSERT_EQ(problem.A.size(), 4);
+    for (const auto& row : problem.A) {
+        ASSERT_EQ(row.size(), 2);
+    }
+    ASSERT_EQ(problem.c.size(), 2);
+    ASSERT_EQ(problem.lw.size(), 4);
+    ASSERT_EQ(problem.up.size(), 4);
+    const double tol = 1.0e-8;
+    EXPECT_NEAR(problem.H[0][0], 8.0, tol);
+    EXPECT_NEAR(problem.H[0][1], 2.0, tol);
+    EXPECT_NEAR(problem.H[1][0], 2.0, tol);
+    EXPECT_NEAR(problem.H[1][1], 10.0, tol);
+    EXPECT_NEAR(problem.A[0][0], 2.0, tol);
+    EXPECT_NEAR(problem.A[0][1], 1.0, tol);
+    EXPECT_NEAR(problem.A[1][0], -1.0, tol);
+    EXPECT_NEAR(problem.A[1][1], 2.0, tol);
+    EXPECT_NEAR(problem.A[2][0], 1.0, tol);
+    EXPECT_NEAR(problem.A[2][1], 0.0, tol);
+    EXPECT_NEAR(problem.A[3][0], 0.0, tol);
+    EXPECT_NEAR(problem.A[3][1], 1.0, tol);
+    EXPECT_NEAR(problem.c[0], 1.5, tol);
+    EXPECT_NEAR(problem.c[1], -2.0, tol);
+    EXPECT_NEAR(problem.lw[0], 2.0, tol);
+    EXPECT_NEAR(problem.lw[1], -1.0e20, tol);
+    EXPECT_NEAR(problem.lw[2], 0.0, tol);
+    EXPECT_NEAR(problem.lw[3], 0.0, tol);
+    EXPECT_NEAR(problem.up[0], 1.0e20, tol);
+    EXPECT_NEAR(problem.up[1], 6.0, tol);
+    EXPECT_NEAR(problem.up[2], 20.0, tol);
+    EXPECT_NEAR(problem.up[3], 1.0e20, tol);
+}
+
 TEST(Utils, MatrixMult1) {
 	matrix_t M1 = { {1.0, 2.0}, {3.0, 4.0} };
 	matrix_t baseline = { {7.0, 10.0}, {15.0, 22.0} };
