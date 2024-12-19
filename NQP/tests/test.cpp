@@ -11,7 +11,7 @@ using namespace QP_NNLS_TEST_DATA;
 using namespace TXT_QP_PARSER;
 const std::string TxtQpRoot = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
 
-TEST(TxtParserTests, T1) {
+TEST(TxtParserTests, QPTEST) {
     TxtParser parser;
     bool status = false;
     DenseQPProblem problem = parser.Parse(TxtQpRoot + "QPTEST.txt", status);
@@ -50,6 +50,37 @@ TEST(TxtParserTests, T1) {
     EXPECT_NEAR(problem.up[1], 6.0, tol);
     EXPECT_NEAR(problem.up[2], 20.0, tol);
     EXPECT_NEAR(problem.up[3], 1.0e20, tol);
+}
+
+TEST(TxtParserTests, KSIP) {
+    TxtParser parser;
+    bool status = false;
+    DenseQPProblem problem = parser.Parse(TxtQpRoot + "KSIP.txt", status);
+    ASSERT_TRUE(status);
+    const double tol = 1.0e-8;
+    using namespace MAROS_MESZAROS;
+    ASSERT_EQ(problem.H.size(), KSIP::H.size());
+    ASSERT_EQ(problem.A.size(), KSIP::A.size());
+    ASSERT_EQ(problem.c.size(), KSIP::c.size());
+    ASSERT_EQ(problem.lw.size(), KSIP::lw.size());
+    ASSERT_EQ(problem.up.size(), KSIP::up.size());
+    const std::size_t nv = problem.H.size();
+    for (std::size_t i = 0; i < nv; ++i) {
+        ASSERT_EQ(problem.H[i].size(), KSIP::H[i].size());
+        for (std::size_t j = 0; j < nv; ++j) {
+            EXPECT_NEAR(problem.H[i][j], KSIP::H[i][j], tol);
+        }
+        EXPECT_NEAR(problem.c[i], KSIP::c[i], tol);
+    }
+    const std::size_t nc = problem.A.size();
+    for (std::size_t i = 0; i < nc; ++i) {
+        ASSERT_EQ(problem.A[i].size(), KSIP::A[i].size());
+        for (std::size_t j = 0; j < nv; ++j) {
+            EXPECT_NEAR(problem.A[i][j], KSIP::A[i][j], tol);
+        }
+        EXPECT_NEAR(problem.lw[i], KSIP::lw[i], tol);
+        EXPECT_NEAR(problem.up[i], KSIP::up[i], tol) << i;
+    }
 }
 
 TEST(Utils, MatrixMult1) {

@@ -112,7 +112,7 @@ bool TxtParser::ReadVector(std::vector<double>& v) {
                 }
                 value.clear();
             }
-            else if (isdigit(el) || el == '.' || el == '-' || el == 'e' || el == '+'){
+            else if (('0' <= el && el <= '9') || el == '.' || el == '-' || el == 'e' || el == '+'){
                 value.push_back(el);
             }
             else if (el == '}') {
