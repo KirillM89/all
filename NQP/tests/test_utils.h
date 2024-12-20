@@ -257,17 +257,21 @@ struct QPTestResult {
     bool status;
     std::string errMsg;
     double dualityGap;
-    double maxPrInfsb;
+    double maxPrInfsbB;
+    double maxPrInfsbC;
     double maxDlInfsb;
-    unsigned int nPrInfsb;
+    unsigned int nPrInfsbB;
+    unsigned int nPrInfsbC;
     unsigned int nDlInfsb;
     void Reset() {
         status = false;
         errMsg.clear();
         dualityGap = std::numeric_limits<double>::max();
-        maxPrInfsb = std::numeric_limits<double>::max();
+        maxPrInfsbC = std::numeric_limits<double>::max();
+        maxPrInfsbB = std::numeric_limits<double>::max();
         maxDlInfsb = std::numeric_limits<double>::max();
-        nPrInfsb = std::numeric_limits<unsigned int>::max();
+        nPrInfsbC = std::numeric_limits<unsigned int>::max();
+        nPrInfsbB = std::numeric_limits<unsigned int>::max();
         nDlInfsb = std::numeric_limits<unsigned int>::max();
     }
 };
@@ -281,9 +285,10 @@ public:
     const QPTestResult& Test(const DenseQPProblem& problem);
 protected:
     void CheckOutput(const SolverOutput& output);
-    void ComputePrInfeasibility();
-    void ComputeDlInfeasibility();
-    void ComputeDualityGap();
+    void ComputePrInfeasibility(const DenseQPProblem& problem);
+    void ComputeDlInfeasibility(const DenseQPProblem& problem);
+    void ComputeDualityGap(const DenseQPProblem& problem);
+    SolverOutput output;
     QPTestResult result;
     QPNNLSDense solver;
     bool isSet = false;

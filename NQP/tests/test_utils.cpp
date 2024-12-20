@@ -750,19 +750,77 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem) {
         return result;
     }
     solver.Solve();
-    const SolverOutput output = solver.GetOutput();
-
+    output = solver.GetOutput();
+    CheckOutput(output);
+    if (!result.status) {
+        return result;
+    }
+    ComputePrInfeasibility(problem);
+    ComputeDlInfeasibility(problem);
+    ComputeDualityGap(problem);
 }
 void DenseQPTester::CheckOutput(const SolverOutput& output) {
+    if (output.dualExitStatus == DualLoopExitStatus::INFEASIBILITY) {
+        result.status = false;
+        result.errMsg = "infeasibility";
+    }
+    result.status = true;
+}
+void DenseQPTester::ComputePrInfeasibility(const DenseQPProblem& problem) {
+    //constraints
+    double maxInfsblC = 0.0;
+    unsigned int nViolatedC = 0;
+    for (std::size_t i = 0; i < problem.A.size(); ++i) {
+        double constraint = -problem.b[i];
+        for (std::size_t j = 0; j < problem.A[i].size(); ++j) {
+            constraint += problem.A[i][j] * output.x[j];
+        }
+        if (constraint > 0.0) {
+            ++nViolatedC;
+            maxInfsblC = std::fmax(constraint, maxInfsblC);
+        }
+    }
+    //bounds
+    double maxInfsblB = 0.0;
+    unsigned int nViolatedB = 0;
+    for (std::size_t i = 0; i < problem.lw.size(); ++i) {
+        double shiftU = output.x[i] - problem.up[i];
+        double shiftL = problem.lw[i] - output.x[i];
+        double shift = std::fmax(shiftL, shiftU);
+        if (shift > 0.0) {
+            ++nViolatedB;
+            maxInfsblB = std::fmax(shift, maxInfsblB);
+        }
+    }
+    result.maxPrInfsbC = maxInfsblC;
+    result.maxPrInfsbB = maxInfsblB;
+    result.nPrInfsbC = nViolatedC;
+    result.nPrInfsbB = nViolatedB;
 
 }
-void DenseQPTester::ComputePrInfeasibility() {
-
+void DenseQPTester::ComputeDlInfeasibility(const DenseQPProblem& problem) {
+    double maxInfsb = 0.0;
+    unsigned int nViolated = 0;
+    for (std::size_t i = 0; i < output.lambda.size(); ++i) {
+        if (output.lambda[i] < 0.0) {
+            maxInfsb = std::fmax(maxInfsb, -output.lambda[i]);
+            ++nViolated;
+        }
+    }
+    for (std::size_t i = 0; i < output.lambdaLw.size(); ++i) {
+        if (output.lambdaLw[i] < 0.0) {
+            maxInfsb = std::fmax(maxInfsb, -output.lambdaLw[i]);
+            ++nViolated;
+        }
+        if (output.lambdaUp[i] < 0.0) {
+            maxInfsb = std::fmax(maxInfsb, -output.lambdaUp[i]);
+            ++nViolated;
+        }
+    }
+    result.maxDlInfsb = maxInfsb;
+    result.nDlInfsb = nViolated;
 }
-void DenseQPTester::ComputeDlInfeasibility() {
-
-}
-void DenseQPTester::ComputeDualityGap() {
+void DenseQPTester::ComputeDualityGap(const DenseQPProblem& problem) {
 
 }
 
