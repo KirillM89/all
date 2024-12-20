@@ -737,5 +737,37 @@ QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA:
 	return baseline;
 }
 
+void DenseQPTester::Set(const Settings& settings, std::unique_ptr<Callback> cb) {
+    solver.SetCallback(std::move(cb));
+    solver.Init(settings);
+}
+
+const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem) {
+    result.Reset();
+    if(!solver.SetProblem(problem)) {
+        result.status = false;
+        result.errMsg = "failed to set problem";
+        return result;
+    }
+    solver.Solve();
+    const SolverOutput output = solver.GetOutput();
+
+}
+void DenseQPTester::CheckOutput(const SolverOutput& output) {
+
+}
+void DenseQPTester::ComputePrInfeasibility() {
+
+}
+void DenseQPTester::ComputeDlInfeasibility() {
+
+}
+void DenseQPTester::ComputeDualityGap() {
+
+}
+
+
+
+
 
 

@@ -32,6 +32,7 @@ struct CompareSettings {
 	QPSolvers qpSolver;
 	UserSettings uSettings;
 };
+
 struct QPBaseline {
 	matrix_t xOpt; // may be many optimal solutions
 	double cost;
@@ -248,6 +249,46 @@ class CompareRelHessParametrized : public QPTestBase, public HessianParametrized
 public:
 	CompareRelHessParametrized() = default;
 };
+
+struct QPTestResult {
+    QPTestResult() {
+        Reset();
+    }
+    bool status;
+    std::string errMsg;
+    double dualityGap;
+    double maxPrInfsb;
+    double maxDlInfsb;
+    unsigned int nPrInfsb;
+    unsigned int nDlInfsb;
+    void Reset() {
+        status = false;
+        errMsg.clear();
+        dualityGap = std::numeric_limits<double>::max();
+        maxPrInfsb = std::numeric_limits<double>::max();
+        maxDlInfsb = std::numeric_limits<double>::max();
+        nPrInfsb = std::numeric_limits<unsigned int>::max();
+        nDlInfsb = std::numeric_limits<unsigned int>::max();
+    }
+};
+
+#include "decorators.h"
+class DenseQPTester {
+public:
+    DenseQPTester() = default;
+    ~DenseQPTester() = default;
+    void Set(const Settings& settings, std::unique_ptr<Callback> cb = nullptr);
+    const QPTestResult& Test(const DenseQPProblem& problem);
+protected:
+    void CheckOutput(const SolverOutput& output);
+    void ComputePrInfeasibility();
+    void ComputeDlInfeasibility();
+    void ComputeDualityGap();
+    QPTestResult result;
+    QPNNLSDense solver;
+    bool isSet = false;
+};
+
 
 #endif
 

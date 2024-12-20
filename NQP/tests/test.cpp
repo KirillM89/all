@@ -10,7 +10,7 @@ using namespace QP_NNLS;
 using namespace QP_NNLS_TEST_DATA;
 using namespace TXT_QP_PARSER;
 const std::string TxtQpRoot = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
-
+#define ns(a) using namespace a;
 TEST(TxtParserTests, QPTEST) {
     TxtParser parser;
     bool status = false;
@@ -80,6 +80,38 @@ TEST(TxtParserTests, KSIP) {
         }
         EXPECT_NEAR(problem.lw[i], KSIP::lw[i], tol);
         EXPECT_NEAR(problem.up[i], KSIP::up[i], tol) << i;
+    }
+}
+
+TEST(TxtParserTests, HS118) {
+    TxtParser parser;
+    bool status = false;
+    DenseQPProblem problem = parser.Parse(TxtQpRoot + "HS118.txt", status);
+    ASSERT_TRUE(status);
+    const double tol = 1.0e-8;
+    using namespace MAROS_MESZAROS;
+    ns(HS118)
+    ASSERT_EQ(problem.H.size(), HS118::H.size());
+    ASSERT_EQ(problem.A.size(), HS118::A.size());
+    ASSERT_EQ(problem.c.size(), HS118::c.size());
+    ASSERT_EQ(problem.lw.size(), HS118::lw.size());
+    ASSERT_EQ(problem.up.size(), HS118::up.size());
+    const std::size_t nv = problem.H.size();
+    for (std::size_t i = 0; i < nv; ++i) {
+        ASSERT_EQ(problem.H[i].size(), HS118::H[i].size());
+        for (std::size_t j = 0; j < nv; ++j) {
+            EXPECT_NEAR(problem.H[i][j], HS118::H[i][j], tol);
+        }
+        EXPECT_NEAR(problem.c[i], HS118::c[i], tol);
+    }
+    const std::size_t nc = problem.A.size();
+    for (std::size_t i = 0; i < nc; ++i) {
+        ASSERT_EQ(problem.A[i].size(), HS118::A[i].size());
+        for (std::size_t j = 0; j < nv; ++j) {
+            EXPECT_NEAR(problem.A[i][j], HS118::A[i][j], tol);
+        }
+        EXPECT_NEAR(problem.lw[i], HS118::lw[i], tol);
+        EXPECT_NEAR(problem.up[i], HS118::up[i], tol) << i;
     }
 }
 
