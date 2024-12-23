@@ -63,7 +63,7 @@ public:
         fid << std::endl;
         fid.close();
     }
-    bool SetFile(const std::string& filename);
+    bool SetFile(const std::string& filename, bool clear = true);
     void SetStage(const std::string& stageName);
     void PrintActiveSetIndices(const std::vector<int>& indices);
     void CloseFile() {
@@ -79,6 +79,9 @@ public:
     }
     template<typename T> void message(T arg) {
         fid << SEP << arg << "\n";
+    }
+    void flush() {
+        fid << std::endl;
     }
 private:
     std::ofstream fid;

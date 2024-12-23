@@ -1013,7 +1013,84 @@ TEST_F(QPTest, C0_0_9_RELAXED3) {
 TEST_F(QPTest, C0_0_9_BOUNDS) {
     comparator.Compare(c0_0_9_bounds, "c0_0_9_bnds.txt");
 }
-
+TEST_F(QpTester, CASE_1) {
+    Test(case_1, "case_1");
+}
+TEST_F(QpTester, CASE_2) {
+    Test(case_2, "case_2");
+}
+TEST_F(QpTester, CASE_3) {
+    Test(case_3, "case_3");
+}
+TEST_F(QpTester, CASE_4) {
+    Test(case_4, "case_4");
+}
+TEST_F(QpTester, S2_0_9) {
+    Test(s2f_0_9, "s2f_0_9");
+}
+TEST_F(QpTester, S2_0_12) {
+    Test(s2f_0_12, "s2f_0_12");
+}
+TEST_F(QpTester, C0_0_9) {
+    Test(c0_0_9, "c0_0_9");
+}
+// small
+TEST_F(QpTesterMM, HS21) {
+    Test("HS21");
+}
+TEST_F(QpTesterMM, HS35) {
+    Test("HS35");
+}
+TEST_F(QpTesterMM, HS76) {
+    Test("HS76");
+}
+TEST_F(QpTesterMM, HS268) {
+    Test("HS268");
+}
+TEST_F(QpTesterMM, HS118) {
+    Test("HS118");
+}
+TEST_F(QpTesterMM, QPTEST) {
+    Test("QPTEST");
+}
+TEST_F(QpTesterMM, S268) {
+    Test("S268");
+}
+TEST_F(QpTesterMM, ZECEVIC2) {
+    Test("ZECEVIC2");
+}
+// medium
+TEST_F(QpTesterMM, KSIP) {
+    Test("KSIP");
+}
+TEST_F(QpTesterMM, QISRAEL) {
+    Test("QISRAEL");
+}
+TEST_F(QpTesterMM, PRIMALC1) {
+    Test("PRIMALC1");
+}
+TEST_F(QpTesterMM, PRIMALC2) {
+    Test("PRIMALC2");
+}
+TEST_F(QpTesterMM, PRIMALC5) {
+    Test("PRIMALC5");
+}
+TEST_F(QpTesterMM, PRIMALC8) {
+    Test("PRIMALC8");
+}
+TEST_F(QpTesterMM, PRIMAL1) {
+    Test("PRIMAL1");
+}
+//large
+TEST_F(QpTesterMM, PRIMAL2) {
+    Test("PRIMAL2");
+}
+TEST_F(QpTesterMM, PRIMAL3) {
+    Test("PRIMAL3");
+}
+TEST_F(QpTesterMM, MOSARQP2) {
+    Test("MOSARQP2");
+}
 
 
 

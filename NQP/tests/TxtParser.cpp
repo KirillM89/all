@@ -86,6 +86,9 @@ bool TxtParser::ReadMatrix(QP_NNLS::matrix_t& m) {
             if (nextToken == '{') {
                 m.emplace_back();
                 ReadVector(m.back());
+                if (m.size() > 1 && (m.back().size() != m[m.size() - 2].size())) {
+                    return false;
+                }
             } else if (nextToken == '}') {
                 ++curPos;
                 return true;
@@ -188,6 +191,8 @@ const QP_NNLS::DenseQPProblem& DenseProblemFormatter::PrepareProblem(const std::
     }
     assert(nB == nC && nC >= nV);
     problem.nEqConstraints = nEq;
+    problem.H = pt.H;
+    problem.c = pt.c;
     GenJac(fmt);
     GenBnds();
     output.status = true;
@@ -221,9 +226,11 @@ void DenseProblemFormatter::GenBnds() {
     const std::size_t nc = pt.A.size();
     problem.lw.resize(nv);
     problem.up.resize(nv);
+    std::size_t ii = 0;
     for (std::size_t i = nc - nv; i < nc; ++i) {
-        problem.lw[i] = pt.lw[i];
-        problem.up[i] = pt.up[i];
+        problem.lw[ii] = pt.lw[i];
+        problem.up[ii] = pt.up[i];
+        ++ii;
     }
 }
 

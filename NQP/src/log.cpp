@@ -20,9 +20,12 @@ namespace QP_NNLS {
 		return f;
 	}
 
-	bool Logger::SetFile(const std::string& fileName) {
+    bool Logger::SetFile(const std::string& fileName, bool clear) {
+        if (fid.is_open()) {
+            fid.close();
+        }
 		logFile = fileName;
-		fid.open(logFile, std::ios::out);
+        fid.open(logFile, clear ? std::ios::out : std::ios::app);
 		return fid.is_open();
 	}
 

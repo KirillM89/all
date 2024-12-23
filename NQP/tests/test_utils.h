@@ -5,6 +5,8 @@
 #include "test_data.h"
 #include "types.h"
 #include "qp.h"
+#include "log.h"
+#include "TxtParser.h"
 #define NEW_INTERFACE
 #ifndef NNLS_TESTS_UTILS_H
 #define NNLS_TESTS_UTILS_H
@@ -135,7 +137,6 @@ private:
 	}
 };
 
-
 class LinearTransform {
 public:
 	LinearTransform() = default;
@@ -259,21 +260,35 @@ struct QPTestResult {
     double dualityGap;
     double maxPrInfsbB;
     double maxPrInfsbC;
+    double maxNegDl;
     double maxDlInfsb;
+    unsigned int nConstraints;
+    unsigned int nVariables;
     unsigned int nPrInfsbB;
     unsigned int nPrInfsbC;
+    unsigned int nNegDl;
     unsigned int nDlInfsb;
+    unsigned int nIterations;
     void Reset() {
         status = false;
         errMsg.clear();
         dualityGap = std::numeric_limits<double>::max();
         maxPrInfsbC = std::numeric_limits<double>::max();
         maxPrInfsbB = std::numeric_limits<double>::max();
+        maxNegDl = std::numeric_limits<double>::max();
         maxDlInfsb = std::numeric_limits<double>::max();
+        nConstraints = 0;
+        nVariables = 0;
         nPrInfsbC = std::numeric_limits<unsigned int>::max();
         nPrInfsbB = std::numeric_limits<unsigned int>::max();
-        nDlInfsb = std::numeric_limits<unsigned int>::max();
+        nNegDl = std::numeric_limits<unsigned int>::max();
+        nDlInfsb = std::numeric_limits<unsigned int>::max(); 
+        nIterations = 0;
     }
+};
+
+struct QpCheckConditions {
+
 };
 
 #include "decorators.h"
@@ -281,18 +296,66 @@ class DenseQPTester {
 public:
     DenseQPTester() = default;
     ~DenseQPTester() = default;
-    void Set(const Settings& settings, std::unique_ptr<Callback> cb = nullptr);
-    const QPTestResult& Test(const DenseQPProblem& problem);
+    void SetCoreSettings(const Settings& settings);
+    void SetCheckConditions(const QpCheckConditions& conditions);
+    void SetUserCallback(std::unique_ptr<Callback> callback);
+    void SetReportFile(const std::string& file) {
+        reportFile = file;
+    };
+    const QPTestResult& Test(const DenseQPProblem& problem,
+                             const std::string& problemName = "");
 protected:
     void CheckOutput(const SolverOutput& output);
     void ComputePrInfeasibility(const DenseQPProblem& problem);
     void ComputeDlInfeasibility(const DenseQPProblem& problem);
     void ComputeDualityGap(const DenseQPProblem& problem);
+    void FillReport();
     SolverOutput output;
     QPTestResult result;
     QPNNLSDense solver;
-    bool isSet = false;
+    QpCheckConditions cc;
+    std::string problemName;
+    std::string reportFile;
+    Logger logger;
+    double xHx = 0.0;
+    double cTx = 0.0;
+    double bTL = 0.0;
+    double lTL = 0.0;
+    double uTL = 0.0;
 };
+
+class QpTester: public ::testing::Test {
+protected:
+    QpTester() {
+        tester.SetCoreSettings(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
+        tester.SetReportFile(root + "report.txt");
+    }
+    void Test(const DenseQPProblem& problem,
+              const std::string& problemName) {
+        ProblemReader pr;
+        pr.Init(problem.H, problem.c, problem.A, problem.b);
+        tester.SetUserCallback(std::make_unique<Callback1>(root +"cases/" + problemName + ".txt"));
+        tester.Test(pr.getProblem(), problemName);
+    }
+    DenseQPTester tester;
+    const std::string root = "C:/Users/m00829527/nqp/nqp/NQP/Log/";
+};
+
+class QpTesterMM : public QpTester {
+protected:
+    QpTesterMM(): QpTester()
+    {}
+    void Test(const std::string& caseName) {
+        const DenseQPProblem pr = fmt.PrepareProblem(TxtQpRoot + caseName + ".txt");
+        tester.SetUserCallback(std::make_unique<Callback1>(root +"cases/" + caseName + ".txt"));
+        tester.Test(pr, caseName);
+    }
+    TXT_QP_PARSER::DenseProblemFormatter fmt;
+    const std::string TxtQpRoot = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
+};
+
+
+
 
 
 #endif

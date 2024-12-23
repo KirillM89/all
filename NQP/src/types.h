@@ -83,7 +83,7 @@ struct CoreSettings {
     //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
-    unsg_t nDualIterations = 200;
+    unsg_t nDualIterations = 1000;
     unsg_t nPrimalIterations = 100;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
