@@ -79,18 +79,18 @@ struct ActiveSetUpdateSettings {
 };
 
 struct CoreSettings {
-    LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
-    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
+    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
+    LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
-    unsg_t nDualIterations = 1000;
+    unsg_t nDualIterations = 10000;
     unsg_t nPrimalIterations = 100;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
     double nnlsPrimalZero = -1.0e-7; //-1.0e-7; //zp < 0 => zp < nnlsPrimalZero
     double minNNLSDualTol = -1.0e-12;
     double prLtZero = 1.0e-14;
-    bool gammaUpdate = true;
+    bool gammaUpdate = false; //true;
     ActiveSetUpdateSettings actSetUpdtSettings;
 };
 

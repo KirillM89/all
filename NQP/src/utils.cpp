@@ -57,11 +57,13 @@ namespace QP_NNLS {
 					if (std::fabs(factor) < CONSTANTS::cholFactorZero) {
 						output.negativeDiag.emplace_back(row, factor);
 						factor = CONSTANTS::cholFactorZero;
+                        cholF[row][col] = factor; //sqrt(factor);
 					} else if (factor < 0.0) {
 						output.negativeBlocking = factor;
 						return false;
-					}
-					cholF[row][col] = sqrt(factor);
+                    } else {
+                        cholF[row][col] = sqrt(factor);
+                    }
 				}
 				else {
 					cholF[row][col] = (1.0 / cholF[row][row]) * factor;

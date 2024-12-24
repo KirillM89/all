@@ -73,7 +73,6 @@ bool TxtParser::ReadMatrix(QP_NNLS::matrix_t& m) {
     m.clear();
     assert(fSize > curPos);
     const unsigned int rSize = std::min(BUFFER_SIZE, fSize - curPos);
-    buf.resize(rSize);
     fid.read(&buf[0], rSize);
     bool matBgFound = false;
     while (true) {
@@ -125,12 +124,15 @@ bool TxtParser::ReadVector(std::vector<double>& v) {
                 }
                 ++curPos;
                 return true;
+            } else {
+
             }
         }
         ++curPos;
     }
     return false;
 }
+
 char TxtParser::FindNextToken() {
     while (curPos < fSize) {
         const char token = buf[curPos];

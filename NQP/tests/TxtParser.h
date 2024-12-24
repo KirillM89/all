@@ -32,7 +32,7 @@ private:
     std::vector<bool> stages;
     QP_NNLS::DenseQPProblem problem;
     std::ifstream fid;
-    std::string buf;
+    char buf[BUFFER_SIZE];
     unsigned int fSize = 0;
     unsigned int curPos = 0;
     bool OpenFile(const std::string& file);
