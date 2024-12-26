@@ -6,6 +6,7 @@ target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/decorators.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/linSolvers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/scaler.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/log.h
     ${CMAKE_CURRENT_SOURCE_DIR}/NNLSQPSolver.h
@@ -14,5 +15,6 @@ target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/types.h
     ${CMAKE_CURRENT_SOURCE_DIR}/decorators.h
     ${CMAKE_CURRENT_SOURCE_DIR}/linSolvers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/scaler.h
 
 )

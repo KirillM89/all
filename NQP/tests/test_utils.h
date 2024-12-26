@@ -262,6 +262,9 @@ struct QPTestResult {
     double maxPrInfsbC;
     double maxNegDl;
     double maxDlInfsb;
+    double primalCost;
+    double violatedC;
+    double violatedB;
     unsigned int nConstraints;
     unsigned int nVariables;
     unsigned int nPrInfsbB;
@@ -277,6 +280,9 @@ struct QPTestResult {
         maxPrInfsbB = std::numeric_limits<double>::max();
         maxNegDl = std::numeric_limits<double>::max();
         maxDlInfsb = std::numeric_limits<double>::max();
+        primalCost =  std::numeric_limits<double>::max();
+        violatedC = 0.0;
+        violatedB = 0.0;
         nConstraints = 0;
         nVariables = 0;
         nPrInfsbC = std::numeric_limits<unsigned int>::max();

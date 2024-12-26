@@ -778,6 +778,7 @@ void DenseQPTester::CheckOutput(const SolverOutput& output) {
     if (output.dualExitStatus == DualLoopExitStatus::INFEASIBILITY) {
         result.status = false;
         result.errMsg = "infeasibility";
+        return;
     }
     result.status = true;
 }
@@ -786,28 +787,34 @@ void DenseQPTester::ComputePrInfeasibility(const DenseQPProblem& problem) {
     //constraints
     double maxInfsblC = 0.0;
     unsigned int nViolatedC = 0;
+    double violatedC = 0.0;
     for (std::size_t i = 0; i < problem.A.size(); ++i) {
         double constraint = -problem.b[i];
         for (std::size_t j = 0; j < problem.A[i].size(); ++j) {
             constraint += problem.A[i][j] * output.x[j];
         }
-        if (constraint > 0.0) {
+        if (constraint > maxInfsblC) {
             ++nViolatedC;
-            maxInfsblC = std::fmax(constraint, maxInfsblC);
+            violatedC = problem.b[i];
+            maxInfsblC = constraint;
         }
     }
     //bounds
     double maxInfsblB = 0.0;
     unsigned int nViolatedB = 0;
+    double violatedB = 0.0;
     for (std::size_t i = 0; i < problem.lw.size(); ++i) {
         double shiftU = output.x[i] - problem.up[i];
         double shiftL = problem.lw[i] - output.x[i];
         double shift = std::fmax(shiftL, shiftU);
-        if (shift > 0.0) {
+        if (shift > maxInfsblB) {
             ++nViolatedB;
-            maxInfsblB = std::fmax(shift, maxInfsblB);
+            violatedB = shiftL > shiftU ? problem.lw[i] : problem.up[i];
+            maxInfsblB = shift;
         }
     }
+    result.violatedC = violatedC;
+    result.violatedB = violatedB;
     result.maxPrInfsbC = maxInfsblC;
     result.maxPrInfsbB = maxInfsblB;
     result.nPrInfsbC = nViolatedC;
@@ -887,7 +894,12 @@ void DenseQPTester::FillReport() {
     } else {
 
         logger.message("| max constr violation", result.maxPrInfsbC,
+                       "| violated value", result.violatedC,
+                       "| n constr violations", result.nPrInfsbC,
                        "| max bounds violation", result.maxPrInfsbB,
+                       "| violated value", result.violatedB,
+                       "| n bnds violations", result.nPrInfsbB,
+                       "| primal cost", output.cost,
                        "| duality gap", result.dualityGap,
                        "| max dual violation",  result.maxDlInfsb,
                        "| max negative dual", result.maxNegDl

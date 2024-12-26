@@ -62,6 +62,16 @@ protected:
     void SolveByEGN(const Eigen::MatrixXd& A, const Eigen::VectorXd& b);
 };
 
+class MssCumulativeSolver : public CumulativeSolver {
+public:
+    MssCumulativeSolver() = delete;
+    MssCumulativeSolver(const matrix_t& M, const std::vector<double>& s);
+    virtual ~MssCumulativeSolver() override = default;
+    const LinSolverOutput& Solve() override;
+protected:
+    void SolveByEGN(const Eigen::MatrixXd& A, const Eigen::VectorXd& b);
+};
+
 
 class DynamicSolver : public ILinSolver {
     // Solver based on dynamically updated LDLT decomposition

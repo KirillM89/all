@@ -1,4 +1,5 @@
 #include "NNLSQPSolver.h"
+#include "scaler.h"
 #include <cmath>
 #include <algorithm>
 namespace QP_NNLS {
@@ -146,15 +147,23 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     TimePoint(uCallback -> initData.tM);
     MultTransp(ws.CholInv, ws.c, ws.v);    // v = Q^-T * d nVariables
     std::vector<double> MByV(nConstraints);
+    //MBScaler mbScaler(ws.Jac, ws.M, ws.b);
+   // mbScaler.Scale();
     Mult(ws.M, ws.v, MByV);                // M * v nConstraints
     VSum(MByV, ws.b, ws.s);
-    scaleFactorDB = 1.0e-7; // dbScaler -> Scale(ws.M, ws.s, settings.origPrimalFsb);
+    ortScaler = std::make_unique<OrtScaler>(ws.M, ws.s);
+    ortScaler -> Scale();
+    const ScaleCoefs& sCoefs = ortScaler -> GetScaleCoefs();
+    scaleFactorDB = sCoefs.scaleFactorS;
     settings.origPrimalFsb *= scaleFactorDB;
     ScaleD();
     if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
         lSolver = std::make_unique<CumulativeLDLTSolver>(ws.M, ws.s);
     } else if (settings.linSolverType == LinSolverType::CUMULATIVE_EG_LDLT) {
         lSolver = std::make_unique<CumulativeEGNSolver>(ws.M, ws.s);
+    }
+    else if (settings.linSolverType == LinSolverType::MSS1) {
+        lSolver = std::make_unique<MssCumulativeSolver>(ws.M, ws.s);
     }
     return true;
 }
@@ -344,7 +353,7 @@ void Core::ScaleD() {
     for (unsg_t i = 0; i < n; ++i) {
         if (i < nConstraints) {
             ws.b[i] *= scaleFactorDB;
-            ws.s[i] *= scaleFactorDB;
+            //ws.s[i] *= scaleFactorDB;
         }
         if (i < nVariables) {
             ws.c[i] *= scaleFactorDB;
@@ -370,16 +379,13 @@ void Core::UnscaleD() {
 }
 void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
-        //if (dualTolerance < 1.0e-10) {
-            gamma = sqrt(std::fabs(gamma - gammaCorrection));
-        //}
+        gamma = sqrt(std::fabs(gamma - gammaCorrection));
     }
 }
 void Core::UpdateGammaOnDualIteration() {
     if (settings.gammaUpdate == true) {
-       // if (dualTolerance < 1.0e-10) {
-            gamma += sqrt(std::fabs(ws.s[newActiveIndex]));
-       // }
+        gamma += sqrt(std::fabs(ws.s[newActiveIndex]));
+        gamma = std::fmin(gamma, 1.0e7);
     }
 }
 void Core::ComputeCost() {
@@ -456,6 +462,7 @@ void Core::ComputeOrigSolution() {
     for (unsg_t i = 0; i < nConstraints; ++i) {
         ws.lambda[i] *= -1.0;
     }
+    ortScaler -> UnScale(ws.lambda);
 }
 
 

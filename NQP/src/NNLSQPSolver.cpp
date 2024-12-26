@@ -1182,13 +1182,14 @@ namespace QP_NNLS {
 			if (absSc > maxSComponent) {
 				maxSComponent = absSc;
 			}
-			if (absSc < minSComponent && absSc > 0.0) {
+            if ((absSc < minSComponent) && (absSc > 0.0)) {
 				minSComponent = absSc;
 			}
 		}
 		if (maxSComponent == 0.0) {
             return 1.0;   //TO DO in this case vector S is zero, incorrect input
 		}
+
 		double maxNorm = 0.0;
 		double minNorm = std::numeric_limits<double>::max();
 		double maxEl = 0.0;
@@ -1199,7 +1200,7 @@ namespace QP_NNLS {
 				if (absEl > maxEl) {
 					maxEl = absEl;
 				}
-				if (absEl < minEl && absEl > 0.0) {
+                if ((absEl < minEl) && (absEl > 0.0)) {
 					minEl = absEl;
 				}
 			}
@@ -1212,8 +1213,18 @@ namespace QP_NNLS {
 			}
 		}
 		assert(!isSame(minNorm, 0.0));
+        double scaleFactor = 1.0;
+        const double maxPow = 1.0e6;
+        while (maxSComponent * scaleFactor > maxPow){
+            scaleFactor *= 0.1;
+        }
+        origTol = origTol * scaleFactor;
+        return scaleFactor;
+
 		double balanceFactor_1 =  maxSComponent / minNorm;
 		double balanceFactor_2 =  maxSComponent / maxNorm;
+
+
 		if (scaleStrategy == DBScalerStrategy::SCALE_FACTOR) {
 			// balance to fixed ratio maxBalanceFactor
 			if (balanceFactor_1 <= balanceUpperBound && balanceFactor_1 >= balanceLowerBound) {
@@ -1255,6 +1266,5 @@ namespace QP_NNLS {
 		}
         return 1.0;
     }
-
 
 }

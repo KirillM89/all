@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "decorators.h"
 #include "linSolvers.h"
+#include "scaler.h"
 #ifndef NNLS_QP_SOLVER_H
 #define NNLS_QP_SOLVER_H
 
@@ -149,6 +150,7 @@ private:
     std::unique_ptr<iTimer> timer;
     std::unique_ptr<Callback> uCallback;
     std::unique_ptr<ILinSolver> lSolver;
+    std::unique_ptr<OrtScaler> ortScaler;
     MMTbSolverDynamic linSolver;
     SolverOutput output;
     bool PrepareNNLS(const DenseQPProblem& problem);
@@ -327,6 +329,15 @@ protected:
     iDBScaler() = default;
 };
 
+struct ProblemProperties {
+   double maxS = 0.0;
+   double minS = 0.0;
+   double maxM = 0.0;
+   double minM = 0.0;
+   double maxMNorm = 0.0;
+   double minMNorm = 0.0;
+};
+
 class DBScaler: public iDBScaler {
 public:
 	DBScaler() = delete;
@@ -340,6 +351,8 @@ protected:
 	const double extremeFactorS = 1.0e-8;
 	const double extremeFactorM = 1.0e8;
 	DBScalerStrategy scaleStrategy = DBScalerStrategy::UNKNOWN;
+    ProblemProperties properties;
 };
+
 }
 #endif

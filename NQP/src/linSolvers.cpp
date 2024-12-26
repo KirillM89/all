@@ -102,4 +102,47 @@ void CumulativeEGNSolver::SolveByEGN(const Eigen::MatrixXd& A, const Eigen::Vect
         output.solution[i] = r[i];
     }
 }
+MssCumulativeSolver::MssCumulativeSolver(const matrix_t& M,
+                                         const std::vector<double>& s):
+    CumulativeSolver(M, s)
+{}
+
+const LinSolverOutput& MssCumulativeSolver::Solve() {
+    output.indices.clear();
+    if (nActive  == 0) {
+        output.solution =  std::vector<double>(nConstraints, 0.0);
+    } else {
+        Eigen::MatrixXd A(nVariables + 1, nActive);
+        Eigen::VectorXd b(nVariables + 1);
+        output.solution = std::vector<double>(nActive, 0.0);
+        for (unsg_t r = 0; r < nVariables + 1; ++r) {
+            b(r) = 0.0;
+            unsg_t act = 0;
+            for (unsg_t c = 0; c < nConstraints; ++c) {
+                if (activeSet[c]) {
+                    if (r == 0) {
+                        output.indices.push_back(c);
+                    }
+                    if (r == nVariables) {
+                        A(r, act) = s[c];
+                    } else {
+                        A(r, act) = M[c][r];
+                    }
+                    ++act;
+                }
+            }
+        }
+        b(nVariables) = -gamma;
+        SolveByEGN(A, b);
+    }
+    return output;
+}
+
+void MssCumulativeSolver::SolveByEGN(const Eigen::MatrixXd& A, const Eigen::VectorXd& b) {
+    Eigen::VectorXd r = A.colPivHouseholderQr().solve(b);
+    for (unsg_t i = 0; i < nActive; ++i) {
+        output.solution[i] = r[i];
+    }
+}
+
 } //namespace QP_NNLS
