@@ -1,0 +1,12 @@
+/*
+!/NQP
+/NQP/*
+!/NQP/src
+!/NQP/CMakeLists.txt
+!/NQP/tests
+!/NQP/tests
+/NQP/tests/*
+!/NQP/tests/CMakeLists.txt
+!/NQP/tests/*.h
+!/NQP/tests/*.cpp
+!.gitignore
