@@ -9,7 +9,7 @@ namespace QP_NNLS {
 using matrix_t = std::vector<std::vector<double>>;
 using unsg_t = unsigned int;
 namespace CONSTANTS {
-	constexpr double cholFactorZero = 1.0e-14;
+    constexpr double cholFactorZero = 1.0e-7;
 	constexpr double pivotZero = 1.0e-14;
 }
 static_assert(CONSTANTS::cholFactorZero > 0.0);
@@ -80,9 +80,9 @@ struct ActiveSetUpdateSettings {
 };
 
 struct CoreSettings {
-    LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
+    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
     //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
-    //LinSolverType linSolverType = LinSolverType::MSS1;
+    LinSolverType linSolverType = LinSolverType::MSS1;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
     unsg_t nDualIterations = 1000;

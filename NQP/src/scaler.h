@@ -38,7 +38,10 @@ public:
         balanceFactor.resize(M.size(), 1.0);
         const double thMin = 1.0e-10;
         const double thMax = 1.0e10;
-        const double minSf = 1.0e-7;
+        const double thMinL = 1.0e-5;
+        const double thMaxL = 1.0e5;
+        const double minSf = 1.0e-8;
+        bool scaleLimited = true;
         scaleFactorS = 1.0;
         for (std::size_t i = 0; i < M.size(); ++i) {
             double norm2 = 0.0;
@@ -47,15 +50,21 @@ public:
             }
             double s2 = s[i] * s[i];
             const double rat = norm2 / s2;
-            double bf = 1.0;
-            if (rat <  thMin) {
-                bf = rat / thMin;  // < 1
-            } else if (rat > thMax){
-                bf = rat / thMax;  // > 1
-            }
-            // s' = bf * s
-            if (bf < scaleFactorS) { // ||M|| << ||s||
-                scaleFactorS = std::fmax(minSf, bf);
+            if (scaleLimited) {
+                if (thMinL < rat && rat < thMaxL) {
+                    scaleFactorS = std::fmin(rat, scaleFactorS);
+                }
+            } else {
+                double bf = 1.0;
+                if (rat <  thMin) {
+                    bf = rat / thMin;  // < 1
+                } else if (rat > thMax){
+                    bf = rat / thMax;  // > 1
+                }
+                // s' = bf * s
+                if (bf < scaleFactorS) { // ||M|| << ||s||
+                    scaleFactorS = std::fmax(minSf, bf);
+                }
             }
             //TODO: implement scaleFactor Up
             scaleCoefs[i] = norm2; // save norms

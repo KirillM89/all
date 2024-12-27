@@ -379,13 +379,12 @@ void Core::UnscaleD() {
 }
 void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
-        gamma = sqrt(std::fabs(gamma - gammaCorrection));
+        gamma = std::fabs(gamma - gammaCorrection);
     }
 }
 void Core::UpdateGammaOnDualIteration() {
     if (settings.gammaUpdate == true) {
-        gamma += sqrt(std::fabs(ws.s[newActiveIndex]));
-        gamma = std::fmin(gamma, 1.0e7);
+        gamma += std::fabs(ws.s[newActiveIndex]);
     }
 }
 void Core::ComputeCost() {
