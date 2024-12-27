@@ -112,11 +112,11 @@ void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
 bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     nVariables = static_cast<unsg_t>(problem.H.size());
     nConstraints = static_cast<unsg_t>(problem.A.size());
-    nEqConstraints = problem.nEqConstraints; 
     for (unsg_t i = 0; i < nEqConstraints; ++i) {
         ws.linEqConstraints.insert(i);
     }
     ws.activeConstraints = ws.linEqConstraints;
+    nEqConstraints = problem.nEqConstraints;
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);

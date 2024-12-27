@@ -351,6 +351,7 @@ class QpTesterMM : public QpTester {
 protected:
     QpTesterMM(): QpTester()
     {}
+
     void Test(const std::string& caseName, bool noEqC = true) {
         const std::string& TxtQpRoot = noEqC ? TxtQpRootNoEqC : TxtQpRootEqC;
         const DenseQPProblem pr = fmt.PrepareProblem(TxtQpRoot + caseName + ".txt");
@@ -358,8 +359,10 @@ protected:
         tester.Test(pr, caseName);
     }
     TXT_QP_PARSER::DenseProblemFormatter fmt;
+
     const std::string TxtQpRootNoEqC = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
     const std::string TxtQpRootEqC = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/Eq/";
+
 };
 
 

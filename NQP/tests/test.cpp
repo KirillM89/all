@@ -1271,5 +1271,3 @@ TEST_F(QpTesterMM, EQ_CVXQP3_M) {
 
 
 
-
-
