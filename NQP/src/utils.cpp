@@ -24,7 +24,7 @@ namespace QP_NNLS {
 	void ComputeCholFactor(const matrix_t& M, matrix_t& cholF) {
 		// A=LLT
 		// cholF must be initialized with zeros
-		// Cholesky–Banachiewicz 
+		// Choleskyâ€“Banachiewicz 
 		std::size_t n = M.size();
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j <= i; j++) {
@@ -57,11 +57,13 @@ namespace QP_NNLS {
 					if (std::fabs(factor) < CONSTANTS::cholFactorZero) {
 						output.negativeDiag.emplace_back(row, factor);
 						factor = CONSTANTS::cholFactorZero;
+                        cholF[row][col] = sqrt(factor);
 					} else if (factor < 0.0) {
 						output.negativeBlocking = factor;
 						return false;
-					}
-					cholF[row][col] = sqrt(factor);
+                    } else {
+                        cholF[row][col] = sqrt(factor);
+                    }
 				}
 				else {
 					cholF[row][col] = (1.0 / cholF[row][row]) * factor;
@@ -181,6 +183,26 @@ namespace QP_NNLS {
 		}
 	}
 
+    void MultTransp(const matrix_t& M, const std::vector<double>& v, const std::set<unsg_t>& activesetIndices, std::vector<double>& res) {
+        //MT*v on active set
+        const std::size_t nrows = M.size();
+        if (nrows == 0) {
+            res.clear();
+            return;
+        }
+        const std::size_t ncols = M.front().size();
+        std::fill(res.begin(), res.end(), 0.0);
+        if (!activesetIndices.empty()) {
+            for (std::size_t i = 0; i < ncols; ++i) {
+                res[i] = 0.0;
+                for (auto iAct: activesetIndices) {
+                    res[i] += M[iAct][i] * v[iAct];
+                }
+            }
+        }
+    }
+
+
     void swapColumns(matrix_t& M, int c1, int c2) {
 		if (c1 == c2){
 			return;
@@ -250,7 +272,7 @@ namespace QP_NNLS {
 		const matrix_t& M2_1 = M1;
 		M1M2T(M1_1, M2_1, MMT);
 	}
-	void InvertByGauss(const matrix_t& M, matrix_t& Minv) {
+    void  InvertByGauss(const matrix_t& M, matrix_t& Minv) {
 		matrix_t Mtmp = M;
         const int n = M.size(); // n is square matrix
         // Create the augmented matrix
@@ -477,7 +499,13 @@ namespace QP_NNLS {
 		}
 		return res;
 	}
-
+    double DotProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::set<unsg_t>& activeSetIndices) {
+        double res = 0.0;
+        for (auto iAct: activeSetIndices) {
+            res += v1[iAct] * v2[iAct];
+        }
+        return res;
+    }
 	void RRF(matrix_t & matrix) {
 		int lead = 0;
 		int rowCount = matrix.size();

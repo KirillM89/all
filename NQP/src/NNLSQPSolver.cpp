@@ -55,8 +55,6 @@ namespace QP_NNLS {
 			d = settings.problemD.c;
 			A = settings.problemD.A;
 			b = settings.problemD.b;
-			F = settings.problemD.F;
-			g = settings.problemD.g;
 			nVariables = static_cast<int>(H.size());
 			nConstraints = static_cast<int>(A.size());
 			nLEqConstraints = static_cast<int>(F.size());
@@ -65,7 +63,7 @@ namespace QP_NNLS {
 			if(!prepareNNLS()) {
 				return false;
 			}
-			scaleFactor = dbScaler -> Scale(matM, vecS, st);
+            scaleFactor = dbScaler -> Scale(matM, vecS, const_cast<double&>(st.origFeasibilityTol));
 			logger.message("scaleFactor", scaleFactor);
 			logger.message("unscaled problem:");
 			dumpProblem();
@@ -327,7 +325,7 @@ namespace QP_NNLS {
 			}
 		}
 		if (isSame(minStep, initStep)) {
-			// final step == initial step if current primal and zp are same for negative zp components 
+            // final step == initial step if current prdualmal and zp are same for negative zp components
 			// primal must always be >= 0, so this case can be if zp[i] == 0 but in this function all zp components are negative 
 			if (st.logLevel > 1) {
 				logger.message("Line search WARNING: step didn't found");
@@ -505,11 +503,11 @@ namespace QP_NNLS {
 
 		minDualIndex = -1;            // index of most negative NNLS dual variable
 		int singularConstraint = -1;  // index of constraint which makes [M s] matrix singular
-		int dualIteration = 0;
 		//dual loop for NNLS problem
 		dualExitStatus = DualLoopExitStatus::UNKNOWN;
 		primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
 		int iLast = -1;
+        int dualIteration = 0;
 		while (dualIteration < st.nDualIterations) {
 			dualExitStatus = DualLoopExitStatus::UNKNOWN;
 			if (st.logLevel > 1) {
@@ -884,6 +882,11 @@ namespace QP_NNLS {
 
 	void LDL::Add(const std::vector<double>& row) {
 		const int mSize = static_cast<int>(A.size());
+        if (mSize == 0) {
+            Set({row});
+            Compute();
+            return;
+        }
 		std::vector<double>b(mSize, 0.0); // b=A*rowT
 		Mult(A, row, b);
 		std::vector<double> l = b;
@@ -1009,7 +1012,7 @@ namespace QP_NNLS {
 		D[curIndex] = d;
 	}
 	double LDL::getARowNormSquared(int row) const {
-		double norm2 = 0;
+        double norm2 = 0.0;
 		for (int i = 0; i < dimC; ++i) {
 			norm2 += A[row][i] * A[row][i];
 		}
@@ -1098,10 +1101,76 @@ namespace QP_NNLS {
 	int MMTbSolver::nDZero() {
 		return ndzero;
 	}
+
+    void MMTbSolverDynamic::Add(const std::vector<double>& v, double b, double gamma, unsg_t indx) {
+        ldl.Add(v);
+        vB.push_back(b);
+        //positions[indx] = activeSet.size();
+        activeSet.push_back(indx);
+        this->gamma = gamma;
+    }
+    bool MMTbSolverDynamic::Delete(unsg_t row) {
+        if (vB.size() <= row + 1) {
+            return false;
+        }
+        ldl.Remove(row);
+        vB.erase(vB.begin() + row);
+        auto it = std::find(activeSet.begin(), activeSet.end(), row);
+        activeSet.erase(it);
+       // positions.erase(row);
+        return true;
+    }
+    unsg_t MMTbSolverDynamic::Solve() {
+        //ldl.Compute();
+        forward.resize(ldl.GetD().size(), 0.0);
+        backward.resize(ldl.GetD().size(), 0.0);
+        ndzero = 0;
+        std::vector<int> dzeroIndices(M.size(), -1);
+        int j = 0;
+        for (int i = 0; i < M.size(); ++i) {
+            if (std::fabs(ldl.GetD()[i]) < zeroTol) {
+                ndzero += 1;
+                dzeroIndices[j++] = i;
+            }
+        }
+        std::vector<double> b = vB;
+        for (auto & el: b ) {
+            el *= gamma;
+        }
+        SolveForward(ldl.GetL(), b);
+        SolveBackward(ldl.GetD(), ldl.GetL());
+        return ndzero;
+    }
+    void MMTbSolverDynamic::SolveForward(const matrix_t& L, const std::vector<double>& b) {
+        const int n = b.size();
+        for (int i = 0; i < n; ++i) {
+            double sum = 0.0;
+            for (int j = 0; j < i; ++j) {
+                sum += L[i][j] * forward[j];
+            }
+            forward[i] = b[i] - sum;
+        }
+    }
+    void MMTbSolverDynamic::SolveBackward(const std::vector<double>& D, const matrix_t& L) {
+        const int n = forward.size();
+        for (int i = n - 1; i >= 0; --i) {
+            double sum = 0.0;
+            for (int j = i + 1; j < n; ++j) {
+                sum += L[j][i] * D[i] * backward[j];
+            }
+            backward[i] = std::fabs(D[i]) < zeroTol ? 0.0 : (forward[i] - sum) / D[i];
+        }
+    }
+
+    const std::vector<double>& MMTbSolverDynamic::GetSolution() {
+        return backward;
+    }
+
+
     DBScaler::DBScaler(DBScalerStrategy strategy):
 		scaleStrategy(strategy)
 	{}
-	double DBScaler::Scale(const matrix_t& M, const std::vector<double>& s, const NNLSQPSolver::Settings& solverSettings) {
+    double DBScaler::Scale(const matrix_t& M, const std::vector<double>& s, double& origTol) {
 	    // on zero dual iteration when active set is empty yet dual = gamma * s
 		// if any component of s is very small, it's comparison with tolerance in active set selection procedure 
 		// may be incorrect which leads to incorrect new active component 
@@ -1113,13 +1182,14 @@ namespace QP_NNLS {
 			if (absSc > maxSComponent) {
 				maxSComponent = absSc;
 			}
-			if (absSc < minSComponent && absSc > 0.0) {
+            if ((absSc < minSComponent) && (absSc > 0.0)) {
 				minSComponent = absSc;
 			}
 		}
 		if (maxSComponent == 0.0) {
             return 1.0;   //TO DO in this case vector S is zero, incorrect input
 		}
+
 		double maxNorm = 0.0;
 		double minNorm = std::numeric_limits<double>::max();
 		double maxEl = 0.0;
@@ -1130,7 +1200,7 @@ namespace QP_NNLS {
 				if (absEl > maxEl) {
 					maxEl = absEl;
 				}
-				if (absEl < minEl && absEl > 0.0) {
+                if ((absEl < minEl) && (absEl > 0.0)) {
 					minEl = absEl;
 				}
 			}
@@ -1143,8 +1213,18 @@ namespace QP_NNLS {
 			}
 		}
 		assert(!isSame(minNorm, 0.0));
+        double scaleFactor = 1.0;
+        const double maxPow = 1.0e6;
+        while (maxSComponent * scaleFactor > maxPow){
+            scaleFactor *= 0.1;
+        }
+        origTol = origTol * scaleFactor;
+        return scaleFactor;
+
 		double balanceFactor_1 =  maxSComponent / minNorm;
 		double balanceFactor_2 =  maxSComponent / maxNorm;
+
+
 		if (scaleStrategy == DBScalerStrategy::SCALE_FACTOR) {
 			// balance to fixed ratio maxBalanceFactor
 			if (balanceFactor_1 <= balanceUpperBound && balanceFactor_1 >= balanceLowerBound) {
@@ -1154,13 +1234,13 @@ namespace QP_NNLS {
 					// dual[i] > (gamma + s_T * y) * origFeasibilityTol => (A * x)[i] - b[i] <= origFeasibilityTol
 					// Increasing gamma from iteration to iteration improves numerical stability 
 					// but for zero iteration if gamma == 1 |s[i]_min| must be > origFeasibilityTol
-					const double unscaledTol = solverSettings.origFeasibilityTol; 
+                    const double unscaledTol = origTol;
 				    double scaleCoef = maxBalanceFactor / balanceFactor_1;
 
                     while (unscaledTol * scaleCoef < 1.0e-14 || minSComponent * scaleCoef < 1.0e-7 ) {
 						scaleCoef *= 10.0;
 					}
-					const_cast<double&>(solverSettings.origFeasibilityTol) = unscaledTol * scaleCoef; 
+                    origTol = unscaledTol * scaleCoef;
 				
 					return scaleCoef;
 				} else if ( 1.0 / balanceFactor_1  > maxBalanceFactor) {
@@ -1184,6 +1264,7 @@ namespace QP_NNLS {
 			double mBalanceFactor = maxEl / minEl;
 			double sBalanceFactor = maxSComponent / minSComponent;
 		}
-	}
+        return 1.0;
+    }
 
 }

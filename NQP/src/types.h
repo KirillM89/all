@@ -7,6 +7,7 @@
 #define NNLS_QP_SOLVER_TYPES_H
 namespace QP_NNLS {
 using matrix_t = std::vector<std::vector<double>>;
+using unsg_t = unsigned int;
 namespace CONSTANTS {
 	constexpr double cholFactorZero = 1.0e-14;
 	constexpr double pivotZero = 1.0e-14;
@@ -41,6 +42,13 @@ enum class DBScalerStrategy {
 	UNKNOWN
 };
 
+enum class LinSolverType {
+    CUMULATIVE_LDLT = 0,
+    CUMULATIVE_EG_LDLT,
+    DYNAMIC_LDLT,
+    MSS1,
+};
+
 enum class CholPivotingStrategy {
 	NO_PIVOTING,
 	FULL,
@@ -52,6 +60,47 @@ enum class GammaUpdateStrategyDual {
 	NO_UPDATE = 0,
 	INCREMENT_BY_S_COMPONENT,
 };
+
+enum class InitStageStatus {
+    SUCCESS = 0,
+    CHOLETSKY
+};
+
+struct LinSolverOutput {
+    bool emptyInput = false;
+    unsg_t nDNegative = std::numeric_limits<unsg_t>::max(); // number of d<=0 in LDLT
+    std::vector<double> solution;
+    std::list<unsg_t>  indices;
+};
+
+struct ActiveSetUpdateSettings {
+    int rptInterval = 0;
+    bool rejectSingular = false;
+    bool firstInactive = true;
+};
+
+struct CoreSettings {
+    LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
+    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
+    //LinSolverType linSolverType = LinSolverType::MSS1;
+    DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
+    CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
+    unsg_t nDualIterations = 1000;
+    unsg_t nPrimalIterations = 100;
+    double nnlsResidNormFsb = 1.0e-16;
+    double origPrimalFsb = 1.0e-6;
+    double nnlsPrimalZero = -1.0e-7; //-1.0e-7; //zp < 0 => zp < nnlsPrimalZero
+    double minNNLSDualTol = -1.0e-12;
+    double prLtZero = 1.0e-14;
+    bool gammaUpdate = true;
+    ActiveSetUpdateSettings actSetUpdtSettings;
+};
+
+struct Settings {
+    bool checkCoreSettings = false;
+    CoreSettings coreSettings;
+};
+
 
 struct UserSettings {
 	ProblemConfiguration configuration = ProblemConfiguration::DENSE;
@@ -73,13 +122,12 @@ struct DenseQPProblem {
 	//Ax <= b
 	//Fx = g
 	matrix_t H;
-	matrix_t A;
-	matrix_t F;
-	std::vector<double> b;
-	std::vector<double> c;
-	std::vector<double> g;
-	std::vector<double> up;
-	std::vector<double> lw;
+    matrix_t A;
+    std::vector<double> b;
+    std::vector<double> c;
+    std::vector<double> up;
+    std::vector<double> lw;
+    unsg_t nEqConstraints;
 };
 
 struct SparseQPProblem {
@@ -106,12 +154,13 @@ enum class DualLoopExitStatus {
 };
 
 enum class PrimalLoopExitStatus {
-	EMPTY_ACTIVE_SET,
+    EMPTY_ACTIVE_SET = 0,
 	ALL_PRIMAL_POSITIVE,
 	ITERATIONS,
 	EMPTY_ACTIVE_SET_ON_ZERO_ITERATION,
 	SINGULAR_MATRIX,
 	DIDNT_STARTED,
+    LINE_SEARCH_FAILED,
 	UNKNOWN
 };
 
@@ -122,13 +171,24 @@ enum class SolverExitStatus {
 	UNKNOWN
 };
 
+enum class PreprocStatus {
+    SUCCESS = 0,
+    INVALID_SETTINGS,
+    INIT_FAILED
+};
+
 struct SolverOutput {
-	DualLoopExitStatus dualExitStatus = DualLoopExitStatus::UNKNOWN;
-	PrimalLoopExitStatus primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
-	int nDualIterations;
+    DualLoopExitStatus dualExitStatus;
+    PrimalLoopExitStatus primalExitStatus;
+    unsg_t nDualIterations;
 	double maxViolation;
 	double dualityGap;
-	TimeIntervals tIntervals;
+    double cost;
+    std::vector<double> x;
+    std::vector<double> lambda;
+    std::vector<double> lambdaLw;
+    std::vector<double> lambdaUp;
+    std::vector<double> violations;
 };
 
 }

@@ -261,6 +261,7 @@ void TestMMTb(const matrix_t& M, const std::vector<double>& b) {
 		EXPECT_LT(std::fabs((b[i] - mmtx[i]) / b[i]), 1.0e-3) << "baseline=" << b[i] << " sol=" << mmtx[i] << " i=" << i;
 	}
 }
+
 void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline) {
 	ProblemReader pr;
 	pr.Init(problem.H, problem.c, problem.A, problem.b);
@@ -290,7 +291,7 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 	if (baseline.dualStatus == DualLoopExitStatus::INFEASIBILITY) {
 		ASSERT_EQ(solver.getDualStatus(), baseline.dualStatus);
 		return;
-	}
+	} 
 	const std::vector<double>& solverX= solver.getXOpt();
 	ASSERT_EQ(solverX.size(), H.size());
 	const double solverCost = solver.getCost();
@@ -316,6 +317,29 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 	}
 	EXPECT_TRUE(passed);
 }
+
+void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings,
+                     const QPBaseline& baseline, const std::string& logPath) {
+    ProblemReader pr;
+    pr.Init(problem.H, problem.c, problem.A, problem.b);
+    QPNNLSDense solver;
+    solver.SetCallback(std::make_unique<Callback1>(logPath));
+    solver.Init(settings);
+    ASSERT_TRUE(solver.SetProblem(pr.getProblem()));
+    solver.Solve();
+    const SolverOutput output = solver.GetOutput();
+    ASSERT_EQ(output.dualExitStatus, baseline.dualStatus);
+    ASSERT_EQ(output.primalExitStatus, baseline.primalStatus);
+    const std::size_t nX = output.x.size();
+    const auto& xBl = baseline.xOpt.front();
+    ASSERT_EQ(nX, xBl.size());
+    const double tol = 1.0e-5;
+    EXPECT_LE(relativeVal(output.cost, baseline.cost), tol);
+    for (std::size_t i = 0; i < nX; ++i) {
+        EXPECT_LE(relativeVal(output.x[i], xBl[i]),tol);
+    }
+}
+
 
 
 void LinearTransform::setQPProblem(const QP_NNLS_TEST_DATA::QPProblem& problem) {
@@ -446,48 +470,32 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
 		return;
 	}
 	if (output.exitStatus == 0) {
+        std::cout << "CONSTRAINTS VIOLATIONS BASELINE BEGIN" << std::endl;
 		CheckConstrViolations(input.m_A, input.m_bV, input.m_lower, input.m_upper, output.m_x);
-	}
-	NNLSQPSolver solver;
-	DenseQPProblem dproblem;
-	dproblem.H = problem.H;
-	dproblem.A = problem.A;
-	dproblem.b = problem.b;
-	dproblem.c = problem.c;
-	dproblem.lw = problem.lw;
-	dproblem.up = problem.up; 
-	ProblemSettings problemNNLS(settings, problem);
-	ASSERT_TRUE(solver.Init(problemNNLS));
-	solver.Solve();
-	QP_SOLVERS::QPOutput nnlsOutput;
-	nnlsOutput.m_x = solver.getXOpt();
-	nnlsOutput.m_cost = solver.getCost();
-	nnlsOutput.m_lambda = solver.getLambda();
-	//
-	assert(nnlsOutput.m_lambda.size() == problem.A.size() || nnlsOutput.m_lambda.size() == problem.A.size() + 2 * nnlsOutput.m_x.size() );
-	if (nnlsOutput.m_lambda.size() > problem.A.size()) {
-		int nX = output.m_x.size();
-		nnlsOutput.m_lambdaU.resize(nX);
-		nnlsOutput.m_lambdaL.resize(nX);
-		for (int i = 0; i < nX; ++i) {
-			nnlsOutput.m_lambdaU[i] = nnlsOutput.m_lambda[problem.A.size() + 2 * i];
-            nnlsOutput.m_lambdaL[i] = nnlsOutput.m_lambda[problem.A.size() + 2 * i + 1];
-		}
-        nnlsOutput.m_lambda.resize(problem.A.size());
-	}
-	//
-	DualLoopExitStatus dualStatus = solver.getDualStatus();
-	QP_NNLS::SolverExitStatus exitStatus = solver.getExitStatus();
-	if (exitStatus == QP_NNLS::SolverExitStatus::SUCCESS) {
-		CheckConstrViolations(dproblem.A, dproblem.b, dproblem.lw, dproblem.up, nnlsOutput.m_x); 
+        std::cout << "CONSTRAINTS VIOLATIONS BASELINE END" << std::endl;
+	} 
+    QP_NNLS::QPNNLSDense solver;
+    solver.SetCallback(std::make_unique<Callback1>(settings.logFile));
+    solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
+    ASSERT_TRUE(solver.SetProblem(problem));
+    solver.Solve();
+    SolverOutput soutput = solver.GetOutput();
+    QP_SOLVERS::QPOutput nnlsOutput;
+    nnlsOutput.m_x = soutput.x;
+    nnlsOutput.m_cost = soutput.cost;
+    nnlsOutput.m_lambda = soutput.lambda;
+    nnlsOutput.m_lambdaL = soutput.lambdaLw;
+    nnlsOutput.m_lambdaU = soutput.lambdaUp;
+    DualLoopExitStatus dualStatus = soutput.dualExitStatus;
+
+    ASSERT_NE(dualStatus, DualLoopExitStatus::UNKNOWN);
+    if (dualStatus != DualLoopExitStatus::INFEASIBILITY) {
+        std::cout << "CONSTRAINTS VIOLATIONS TESTING BEGIN" << std::endl;
+        CheckConstrViolations(problem.A, problem.b, problem.lw, problem.up, nnlsOutput.m_x);
+        std::cout << "CONSTRAINTS VIOLATIONS TESTING END" << std::endl;
 		nnlsOutput.exitStatus = 0;
 	} else {
-		ASSERT_NE(dualStatus, DualLoopExitStatus::UNKNOWN);
-		if (dualStatus != DualLoopExitStatus::INFEASIBILITY) { // infeasibility is the only critical status
-			nnlsOutput.exitStatus = 0;
-		} else {
-			nnlsOutput.exitStatus = 1;
-		}
+        nnlsOutput.exitStatus = 1;
 	}
 	ProcessResults(output, nnlsOutput);
 }
@@ -579,6 +587,7 @@ void QPSolverComparator::ProcessResults(const QP_SOLVERS::QPOutput& outputSolver
 	}
     // compare with baseline
     if (compareType == CompareType::COST) {
+        std::cout << "COMPARE COST" << std::endl;
 		EXPECT_LE(cost_nnls, cost + costTol);
 		return;
 	}
@@ -706,7 +715,11 @@ void LinearTransformParametrized::TransformAndTest(const QP_NNLS_TEST_DATA::QPPr
 	LinearTransform tr;
 	tr.setQPProblem(problem);
 	//cost doesn't cahnge in linear transformation 
-	TestSolver(tr.transform(trMat), settings, baselineTr);
+#ifndef NEW_INTERFACE
+    TestSolver(tr.transform(trMat), settings, baselineTr);
+#else
+    TestSolverDense(tr.transform(trMat), QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface, baselineTr, "testTransform.txt");
+#endif
 }
 QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA::QPProblem& problem) {
 	NNLSQPSolver solver;
@@ -719,8 +732,184 @@ QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA:
 	QPBaseline baseline;
 	baseline.xOpt = {solver.getXOpt()};
 	baseline.cost = solver.getCost();
+    baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
+    baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
 	return baseline;
 }
+
+void DenseQPTester::SetCoreSettings(const Settings& settings) {
+    solver.Init(settings);
+}
+
+void DenseQPTester::SetCheckConditions(const QpCheckConditions& conditions) {
+
+}
+
+void DenseQPTester::SetUserCallback(std::unique_ptr<Callback> callback) {
+    solver.SetCallback(std::move(callback));
+}
+
+
+const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
+                                        const std::string& problemName) {
+
+    this -> problemName = problemName;
+    result.Reset();
+    if(!solver.SetProblem(problem)) {
+        result.status = false;
+        result.errMsg = "failed to set problem";
+        return result;
+    }
+    solver.Solve();
+    output = solver.GetOutput();
+    CheckOutput(output);
+    if (result.status) {
+        ComputePrInfeasibility(problem);
+        ComputeDlInfeasibility(problem);
+        ComputeDualityGap(problem);
+    }
+    FillReport();
+    return result;
+}
+void DenseQPTester::CheckOutput(const SolverOutput& output) {
+    result.nConstraints = output.lambda.size();
+    result.nVariables = output.x.size();
+    result.nIterations = output.nDualIterations;
+    if (output.dualExitStatus == DualLoopExitStatus::INFEASIBILITY) {
+        result.status = false;
+        result.errMsg = "infeasibility";
+        return;
+    }
+    result.status = true;
+}
+void DenseQPTester::ComputePrInfeasibility(const DenseQPProblem& problem) {
+    //Ax <= b, l <= x <= u
+    //constraints
+    double maxInfsblC = 0.0;
+    unsigned int nViolatedC = 0;
+    double violatedC = 0.0;
+    for (std::size_t i = 0; i < problem.A.size(); ++i) {
+        double constraint = -problem.b[i];
+        for (std::size_t j = 0; j < problem.A[i].size(); ++j) {
+            constraint += problem.A[i][j] * output.x[j];
+        }
+        if (constraint > maxInfsblC) {
+            ++nViolatedC;
+            violatedC = problem.b[i];
+            maxInfsblC = constraint;
+        }
+    }
+    //bounds
+    double maxInfsblB = 0.0;
+    unsigned int nViolatedB = 0;
+    double violatedB = 0.0;
+    for (std::size_t i = 0; i < problem.lw.size(); ++i) {
+        double shiftU = output.x[i] - problem.up[i];
+        double shiftL = problem.lw[i] - output.x[i];
+        double shift = std::fmax(shiftL, shiftU);
+        if (shift > maxInfsblB) {
+            ++nViolatedB;
+            violatedB = shiftL > shiftU ? problem.lw[i] : problem.up[i];
+            maxInfsblB = shift;
+        }
+    }
+    result.violatedC = violatedC;
+    result.violatedB = violatedB;
+    result.maxPrInfsbC = maxInfsblC;
+    result.maxPrInfsbB = maxInfsblB;
+    result.nPrInfsbC = nViolatedC;
+    result.nPrInfsbB = nViolatedB;
+
+}
+void DenseQPTester::ComputeDlInfeasibility(const DenseQPProblem& problem) {
+    // KKT conditions:
+    // H * x + c + A_T * lambda - lambdaL + lambdaUp = 0 - dual feasibility
+    // lambda, lambdaL, lambdaU >= 0
+    // dualityGap = 0 <=> lambda *( A * x - b) = 0, lambdaL * (x - l) = 0, lambdaU * (x - u) = 0
+    // A * x <= b, x <= u, x >= l -- checks in ComputePrInfeasibility
+
+    // dual feasibility
+    double maxDualFsb = 0.0;
+    unsigned int nViolated = 0;   
+    std::vector<double> dualFsb(problem.H.size());
+    Mult(problem.H, output.x, dualFsb);
+    std::vector<double> AtLambda(problem.H.size());
+    MultTransp(problem.A, output.lambda, AtLambda);
+    // xTx, xTx, bTl, lTl, uTl are duality gap components
+    xHx = 0.0;
+    cTx = 0.0;
+    for (std::size_t i = 0; i < problem.H.size(); ++i) {
+        xHx += dualFsb[i] * output.x[i];
+        cTx += problem.c[i] * output.x[i];
+        dualFsb[i] += (problem.c[i] - output.lambdaLw[i] +
+                       output.lambdaUp[i] + AtLambda[i]);
+        const double violation = std::fabs(dualFsb[i]);
+        if (violation > 0.0) {
+            maxDualFsb = std::fmax(violation, maxDualFsb);
+            ++nViolated;
+        }
+    }
+    result.maxDlInfsb = maxDualFsb;
+    result.nDlInfsb = nViolated;
+
+    // lambda > 0
+    double maxNegDual = 0.0;
+    unsigned int nNegLambda = 0;
+    bTL = 0.0;
+    for (std::size_t i = 0; i < output.lambda.size(); ++i) {
+        bTL += problem.b[i] * output.lambda[i];
+        if (output.lambda[i] < 0.0) {
+            maxNegDual = std::fmax(maxNegDual, -output.lambda[i]);
+            ++nNegLambda;
+        }
+    }
+    lTL = 0.0;
+    uTL = 0.0;
+    for (std::size_t i = 0; i < output.lambdaLw.size(); ++i) {
+        lTL += output.lambdaLw[i] * problem.lw[i];
+        uTL += output.lambdaUp[i] * problem.up[i];
+        if (output.lambdaLw[i] < 0.0) {
+            maxNegDual= std::fmax(maxNegDual, -output.lambdaLw[i]);
+            ++nNegLambda;
+        }
+        if (output.lambdaUp[i] < 0.0) {
+            maxNegDual = std::fmax(maxNegDual, -output.lambdaUp[i]);
+            ++nNegLambda;
+        }
+    }
+    result.maxNegDl = maxNegDual;
+    result.nNegDl = nViolated;
+}
+void DenseQPTester::ComputeDualityGap(const DenseQPProblem& problem) {
+    // gap = x_T * H * x + c_T * x + b_T * lambda - l_T * lambdaL + u_T * lambdaU
+    result.dualityGap  = xHx + cTx + bTL - lTL + uTL;
+}
+void DenseQPTester::FillReport() {
+    logger.SetFile(reportFile, false);
+    logger.message(problemName, "vars", result.nVariables,
+                   "constraints", result.nConstraints,
+                   "iterations", result.nIterations);
+    if (!result.errMsg.empty()) {
+        logger.message(problemName, result.errMsg);
+    } else {
+
+        logger.message("| max constr violation", result.maxPrInfsbC,
+                       "| violated value", result.violatedC,
+                       "| n constr violations", result.nPrInfsbC,
+                       "| max bounds violation", result.maxPrInfsbB,
+                       "| violated value", result.violatedB,
+                       "| n bnds violations", result.nPrInfsbB,
+                       "| primal cost", output.cost,
+                       "| duality gap", result.dualityGap,
+                       "| max dual violation",  result.maxDlInfsb,
+                       "| max negative dual", result.maxNegDl
+                       );
+    }
+    logger.flush();
+}
+
+
+
 
 
 
