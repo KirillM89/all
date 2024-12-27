@@ -1,6 +1,7 @@
 #ifndef NNLS_SCALER_H
 #define NNLS_SCALER_H
 #include "types.h"
+#include "utils.h"
 #include <cmath>
 namespace QP_NNLS {
 
@@ -36,13 +37,12 @@ public:
     void Scale() {
         scaleCoefs.resize(M.size());
         balanceFactor.resize(M.size(), 1.0);
-        const double thMin = 1.0e-10;
-        const double thMax = 1.0e10;
-        const double thMinL = 1.0e-5;
-        const double thMaxL = 1.0e5;
+        const double thMin = 1.0e-5;
+        const double thMax = 1.0e5;
         const double minSf = 1.0e-8;
         bool scaleLimited = true;
-        scaleFactorS = 1.0;
+        double scaleFactorSL = 1.0;
+        double scaleFactorSU = 1.0;
         for (std::size_t i = 0; i < M.size(); ++i) {
             double norm2 = 0.0;
             for (std::size_t j = 0; j < M[i].size(); ++j) {
@@ -50,10 +50,9 @@ public:
             }
             double s2 = s[i] * s[i];
             const double rat = norm2 / s2;
-            if (scaleLimited) {
-                if (thMinL < rat && rat < thMaxL) {
-                    scaleFactorS = std::fmin(rat, scaleFactorS);
-                }
+            if (thMin < rat && rat < thMax) {
+                // check if ratio is in valid bounds
+                scaleFactorSL = std::fmin(rat, scaleFactorSL);
             } else {
                 double bf = 1.0;
                 if (rat <  thMin) {
@@ -62,13 +61,31 @@ public:
                     bf = rat / thMax;  // > 1
                 }
                 // s' = bf * s
-                if (bf < scaleFactorS) { // ||M|| << ||s||
-                    scaleFactorS = std::fmax(minSf, bf);
+                if (bf < scaleFactorSU) { // ||M|| << ||s||
+                    scaleFactorSU = std::fmax(minSf, bf);
                 }
             }
             //TODO: implement scaleFactor Up
             scaleCoefs[i] = norm2; // save norms
         }
+        const bool blncL = isSame(scaleFactorSL, 1.0);
+        const bool blncU = isSame(scaleFactorSU, 1.0);
+        if (blncL && !blncU) {
+            // all the constraints are very unbalanced
+            scaleFactorS = scaleFactorSU;
+
+        } else if (!blncL && blncU) {
+            // all the constraints are good balanced
+            scaleFactorS = scaleFactorSL;
+        } else if (blncL && blncU) {
+            // all the constraints are very good balanced
+            scaleFactorS = 1.0;
+        } else {
+            // exist good and bad balanced constraints
+            // balance only good constraints
+            scaleFactorS = scaleFactorSL;
+        }
+
 
         for (std::size_t i = 0; i < M.size(); ++i) {
             s[i] *= scaleFactorS;
