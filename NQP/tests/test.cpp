@@ -1,17 +1,22 @@
 #include "utils.h"
 #include "test_utils.h"
 #include "test_data.h"
-//#include "NNLSQPSolver.h"
 #include "TxtParser.h"
 #include "decorators.h"
 #include <algorithm>
 #include <string>
-
+#include "data_writer.h"
 using namespace QP_NNLS;
 using namespace QP_NNLS_TEST_DATA;
 using namespace TXT_QP_PARSER;
 const std::string TxtQpRoot = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
 #define ns(a) using namespace a;
+TEST(DataWriter, Test1) {
+    using namespace FMT_WRITER;
+    FmtWriter fw;
+    fw.SetFile("testLog.txt");
+    fw.Write(1, 2, 3.0);
+}
 TEST(TxtParserTests, QPTEST) {
     TxtParser parser;
     bool status = false;
