@@ -1,3 +1,6 @@
+#ifndef NNLS_TESTS_UTILS_H
+#define NNLS_TESTS_UTILS_H
+
 #include <random>
 #include <cmath>
 #include <algorithm>
@@ -7,9 +10,10 @@
 #include "qp.h"
 #include "log.h"
 #include "TxtParser.h"
-#define NEW_INTERFACE
-#ifndef NNLS_TESTS_UTILS_H
-#define NNLS_TESTS_UTILS_H
+#include "configuration.h"
+#include "decorators.h"
+
+
 static std::random_device rd;  // Will be used to obtain a seed for the random number engine
 static std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 enum class CompareType {
@@ -293,7 +297,6 @@ struct QpCheckConditions {
 
 };
 
-#include "decorators.h"
 class DenseQPTester {
 public:
     DenseQPTester() = default;
@@ -330,35 +333,31 @@ class QpTester: public ::testing::Test {
 protected:
     QpTester() {
         tester.SetCoreSettings(QP_NNLS_TEST_DATA::NqpTestSettingsDefault);
-        tester.SetReportFile(root + "report.txt");
+        tester.SetReportFile(TST_CONFIG::LOG_DIR + "report.txt");
     }
     void Test(const DenseQPProblem& problem,
               const std::string& problemName) {
         ProblemReader pr;
         pr.Init(problem.H, problem.c, problem.A, problem.b);
-        tester.SetUserCallback(std::make_unique<Callback1>(root +"cases/" + problemName + ".txt"));
+        tester.SetUserCallback(std::make_unique<Callback1>(TST_CONFIG::LOG_DIR +"cases/" + problemName + ".txt"));
         tester.Test(pr.getProblem(), problemName);
     }
     DenseQPTester tester;
-    const std::string root = "C:/Users/m00829527/nqp/nqp/NQP/Log/";
 };
 
 class QpTesterMM : public QpTester {
 protected:
-    QpTesterMM(): QpTester()
+    QpTesterMM():
+        QpTester()
     {}
-
     void Test(const std::string& caseName, bool noEqC = true) {
-        const std::string& TxtQpRoot = noEqC ? TxtQpRootNoEqC : TxtQpRootEqC;
+        const std::string& TxtQpRoot = noEqC ?  TST_CONFIG::DENSE_ONLY_INQ_CONSTR_PATH
+                                              : TST_CONFIG::DENSE_INQ_AND_EQ_CONSTR_PATH;
         const DenseQPProblem pr = fmt.PrepareProblem(TxtQpRoot + caseName + ".txt");
-        tester.SetUserCallback(std::make_unique<Callback1>(root +"cases/" + caseName + ".txt"));
+        tester.SetUserCallback(std::make_unique<Callback1>(TST_CONFIG::LOG_DIR +"cases/" + caseName + ".txt"));
         tester.Test(pr, caseName);
     }
     TXT_QP_PARSER::DenseProblemFormatter fmt;
-
-    const std::string TxtQpRootNoEqC = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
-    const std::string TxtQpRootEqC = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/Eq/";
-
 };
 
 

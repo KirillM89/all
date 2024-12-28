@@ -1,6 +1,5 @@
 target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/log.cpp
-    #${CMAKE_CURRENT_SOURCE_DIR}/NNLSQPSolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/timers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/decorators.cpp
@@ -10,7 +9,6 @@ target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/callback.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/log.h
-    #${CMAKE_CURRENT_SOURCE_DIR}/NNLSQPSolver.h
     ${CMAKE_CURRENT_SOURCE_DIR}/timers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.h
     ${CMAKE_CURRENT_SOURCE_DIR}/types.h
@@ -19,5 +17,4 @@ target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/scaler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core.h
     ${CMAKE_CURRENT_SOURCE_DIR}/callback.h
-
 )

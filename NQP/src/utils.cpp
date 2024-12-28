@@ -668,8 +668,8 @@ namespace QP_NNLS {
         l.resize(dimR, 0.0);
         curIndex = 0;
         d = 0.0;
-
     }
+
     void LDL::Compute() {
         L.front().front() = 1.0;
         D.front() = getARowNormSquared(0);
