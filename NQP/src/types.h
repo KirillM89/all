@@ -1,10 +1,13 @@
 
+#ifndef NNLS_QP_SOLVER_TYPES_H
+#define NNLS_QP_SOLVER_TYPES_H
 #include <vector>
 #include <list>
 #include <string>
+#include <deque>
+#include <unordered_set>
+#include <set>
 #include "timers.h"
-#ifndef NNLS_QP_SOLVER_TYPES_H
-#define NNLS_QP_SOLVER_TYPES_H
 namespace QP_NNLS {
 using matrix_t = std::vector<std::vector<double>>;
 using unsg_t = unsigned int;

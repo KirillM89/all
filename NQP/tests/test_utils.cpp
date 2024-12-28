@@ -1,6 +1,6 @@
 #include "test_utils.h"
 #include "utils.h"
-#include "NNLSQPSolver.h"
+//#include "NNLSQPSolver.h"
 #include "qp.h"
 
 bool isNumber(const double& val) {
@@ -261,7 +261,7 @@ void TestMMTb(const matrix_t& M, const std::vector<double>& b) {
 		EXPECT_LT(std::fabs((b[i] - mmtx[i]) / b[i]), 1.0e-3) << "baseline=" << b[i] << " sol=" << mmtx[i] << " i=" << i;
 	}
 }
-
+/*
 void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline) {
 	ProblemReader pr;
 	pr.Init(problem.H, problem.c, problem.A, problem.b);
@@ -316,7 +316,7 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 		}
 	}
 	EXPECT_TRUE(passed);
-}
+}  */
 
 void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings,
                      const QPBaseline& baseline, const std::string& logPath) {
@@ -454,7 +454,7 @@ void QPSolverComparator::Set(QPSolvers solverType, CompareType compareType) {
 	this->compareType = compareType;
 }
 
-void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettings& settings, std::string logFile) {
+void QPSolverComparator::Compare(const DenseQPProblem& problem, const Settings& settings, std::string logFile) {
 	QP_SOLVERS::QPInput input;
 	QP_SOLVERS::QPOutput output;
 	input.m_H = problem.H;
@@ -475,8 +475,7 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
         std::cout << "CONSTRAINTS VIOLATIONS BASELINE END" << std::endl;
 	} 
     QP_NNLS::QPNNLSDense solver;
-    solver.SetCallback(std::make_unique<Callback1>(settings.logFile));
-    solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
+    solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefault);
     ASSERT_TRUE(solver.SetProblem(problem));
     solver.Solve();
     SolverOutput soutput = solver.GetOutput();
@@ -699,11 +698,10 @@ void QPBMComparator::Compare(const QP_NNLS_TEST_DATA::QPProblem& problem, const 
 	DenseQPProblem qpProblem = pr.getProblem();
 	QPSolverComparator qpComparator;
 	qpComparator.Set(settings.qpSolver, settings.compareType);
-    settings.uSettings.logFile = logFile;
     qpComparator.Compare(qpProblem, settings.uSettings);
 }
 
-void LinearTransformParametrized::SetUserSettings(const QP_NNLS::UserSettings& settings) {
+void LinearTransformParametrized::SetUserSettings(const QP_NNLS::Settings& settings) {
 	this->settings = settings;
 }
 void LinearTransformParametrized::TransformAndTest(const QP_NNLS_TEST_DATA::QPProblem& problem, const QPBaseline& baseline) {
@@ -714,24 +712,20 @@ void LinearTransformParametrized::TransformAndTest(const QP_NNLS_TEST_DATA::QPPr
 	Mult(trMatInv, baseline.xOpt.front(), baselineTr.xOpt.front()); //Xnew = M-1*Xold
 	LinearTransform tr;
 	tr.setQPProblem(problem);
-	//cost doesn't cahnge in linear transformation 
-#ifndef NEW_INTERFACE
-    TestSolver(tr.transform(trMat), settings, baselineTr);
-#else
-    TestSolverDense(tr.transform(trMat), QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface, baselineTr, "testTransform.txt");
-#endif
+    TestSolverDense(tr.transform(trMat), QP_NNLS_TEST_DATA::NqpTestSettingsDefault, baselineTr, "testTransform.txt");
 }
 QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA::QPProblem& problem) {
-	NNLSQPSolver solver;
+    QPNNLSDense solver;
 	ProblemReader pr; 
 	pr.Init(problem.H, problem.c, problem.A, problem.b);
 	DenseQPProblem dProblem = pr.getProblem();
-	ProblemSettings problemNNLS(settings, dProblem);
-	solver.Init(problemNNLS);
-	solver.Solve();
-	QPBaseline baseline;
-	baseline.xOpt = {solver.getXOpt()};
-	baseline.cost = solver.getCost();
+    solver.Init(settings);
+    solver.SetProblem(dProblem);
+    solver.Solve();
+    SolverOutput output = solver.GetOutput();
+    QPBaseline baseline;
+    baseline.xOpt = {output.x};
+    baseline.cost = output.cost;
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
 	return baseline;

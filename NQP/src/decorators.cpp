@@ -1,11 +1,12 @@
 #include "decorators.h"
-#include "NNLSQPSolver.h"
+#include "core.h"
 namespace QP_NNLS {
 
     QPNNLS::QPNNLS():
         core(std::make_unique<Core>()),
         isInitialized(false)
     { }
+    QPNNLS::~QPNNLS() = default;
 
     void QPNNLS::Init(const Settings& settings) {
         if (VerifySettings(settings)) {

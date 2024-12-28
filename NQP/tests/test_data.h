@@ -5,8 +5,9 @@ using namespace QP_NNLS;
 namespace QP_NNLS_TEST_DATA {
     // 0.5 x_T * H * x + c_T * x ; A * x < b; lw <= x <= up
 
-const UserSettings NqpTestSettingsDefault;
-const Settings NqpTestSettingsDefaultNewInterface;
+
+const Settings NqpTestSettingsDefault;
+
 namespace TRANSFORMATION_MATRIX {
     const matrix_t trMat1 = {{1.0, 2.0}, {-1.0, 3.0}};
 	const matrix_t trMat2 = {{-4.0, 18.0}, {1.0, -6.0}};

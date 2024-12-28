@@ -658,4 +658,248 @@ namespace QP_NNLS {
 			}
 		}
 	}
+
+    void LDL::Set(const matrix_t& A) {
+        this->A = A;
+        dimR = static_cast<int>(A.size());
+        dimC = static_cast<int>(A.front().size());
+        L.resize(dimR, std::vector<double>(dimR, 0.0));
+        D.resize(dimR, 0.0);
+        l.resize(dimR, 0.0);
+        curIndex = 0;
+        d = 0.0;
+
+    }
+    void LDL::Compute() {
+        L.front().front() = 1.0;
+        D.front() = getARowNormSquared(0);
+        curIndex = 1;
+        while(curIndex < dimR) {
+            compute_l();
+            compute_d();
+            update_L();
+            update_D();
+            ++curIndex;
+        }
+    }
+
+    void LDL::Add(const std::vector<double>& row) {
+        const int mSize = static_cast<int>(A.size());
+        if (mSize == 0) {
+            Set({row});
+            Compute();
+            return;
+        }
+        std::vector<double>b(mSize, 0.0); // b=A*rowT
+        Mult(A, row, b);
+        std::vector<double> l = b;
+        solveLDb(b, l);
+        double dd = DotProduct(row, row);
+        for (int i = 0; i < mSize; ++i) {
+            dd -= l[i] * D[i] * l[i];
+        }
+        for (auto& r : L) {
+            r.resize(mSize + 1, 0.0);
+        }
+        L.push_back(l);
+        L.back().push_back(1.0);
+        D.push_back(dd);
+        A.push_back(row);
+    }
+    void LDL::Remove(int i) {
+        A.erase(A.begin() + i);
+        // if remove last row
+        if (i == A.size()) {
+            L.resize(i);
+            D.resize(i);
+            for (int j = 0; j < i; ++j) {
+                L[j].resize(i);
+            }
+            return;
+        }
+        const double dd = D[i];
+        const int n = static_cast<int>(L.size());
+        // i=0...n-1
+        const int nRowsMdd = n - i - 1; //n-1,...,1
+        const int nColsMdd = nRowsMdd + 1;
+        matrix_t Mdd(nRowsMdd, std::vector<double>(nColsMdd, 0.0));
+
+        std::vector<double> droots(nRowsMdd);
+        for (int j = 0; j < nRowsMdd; ++j) {
+            double droot2 = 0.0;
+            if (D[i + 1 + j] < 0.0) {
+                std::cout << "LDL warning: " << "D[" << i + 1 + j << "]=" << D[1 + i + j] << "< 0" << std::endl;
+                droot2 = 0.0;
+            } else {
+                droot2 = sqrt(D[i + 1 + j]);
+            }
+            droots[j] = droot2;
+        }
+        //fill L2*D2_1/2
+        for (int ir = 0; ir < nRowsMdd; ++ir) {
+            for (int ic = 0; ic < nRowsMdd; ++ic) {
+                Mdd[ir][ic] = L[i + 1 + ir][i + 1 + ic] * droots[ic];
+            }
+        }
+        //fill dd_1/2*L4
+        if (dd < 0.0) {
+            std::cout << "LDL warning: " << "D[" << i << "]=" << dd << "< 0" << std::endl;
+        }
+        const double ddSqrt = dd < 0.0 ? 0.0 : sqrt(dd);
+        for (int ir = 0; ir < nRowsMdd; ++ir) {
+            Mdd[ir][nRowsMdd] = ddSqrt * L[i + 1+ ir][i];
+        }
+        // solve L2_til * D2_til * L2_til
+        LDL ldl;
+        ldl.Set(Mdd);
+        ldl.Compute();
+        const matrix_t& Ltil = ldl.GetL();
+        const std::vector<double>& Dtil = ldl.GetD();
+        // update L,D with L_, D_
+        update_L_remove(i, Ltil);
+        D.resize(D.size() - 1);
+        for (int j = 0; j < nRowsMdd; ++j) {
+            D[j + i] = Dtil[j];
+        }
+    }
+    void LDL::update_L_remove(int iRowDelete, const matrix_t& Ltil) {
+        L.erase(L.begin() + iRowDelete);
+        const int Lsize = static_cast<int>(L.size());
+        for (int i = 0; i < Lsize; ++i) {
+            L[i].resize(Lsize);
+            if (i >= iRowDelete) {
+                for (int j = 0; j < Lsize - iRowDelete; ++j) {
+                    L[i][j + iRowDelete] = Ltil[i - iRowDelete][j];
+                }
+            }
+        }
+    }
+    const matrix_t& LDL::GetL() {
+        return L;
+    }
+    const std::vector<double>& LDL::GetD() {
+        return D;
+    }
+
+    void LDL::compute_l() {
+        //L_i * D_i * l_i+1 = A1:i * A_i+1T
+        //b = A1:i * A_i+1T
+        std::vector<double> b(curIndex, 0.0);
+        for (int i = 0; i < curIndex; ++i) {
+            for (int j = 0; j < dimC; ++j) {
+                b[i] += A[i][j] * A[curIndex][j];
+            }
+        }
+        solveLDb(b, l);
+    }
+    void LDL::compute_d() {
+        d = getARowNormSquared(curIndex);
+        for (int i = 0; i < curIndex; ++i) {
+            d -= l[i] * D[i] * l[i];
+        }
+    }
+    void LDL::update_L() {
+        L[curIndex][curIndex] = 1.0;
+        for (int i = 0; i < curIndex; ++i) {
+            L[curIndex][i] = l[i];
+        }
+    }
+    void LDL::update_D() {
+        if (d <= 0.0) {
+            std::cout << "LDL warning: " << "d=" << d << "<0" << std::endl;
+            d = 0.0;
+        }
+        D[curIndex] = d;
+    }
+    double LDL::getARowNormSquared(int row) const {
+        double norm2 = 0.0;
+        for (int i = 0; i < dimC; ++i) {
+            norm2 += A[row][i] * A[row][i];
+        }
+        return norm2;
+    }
+    void LDL::solveLDb(const std::vector<double>& b, std::vector<double>& l) {
+        const int n = b.size();
+        for (int i = 0; i < n; ++i) {
+            if (std::fabs(D[i]) < 1.0e-20) {
+                l[i] = 0.0;
+            } else {
+                double sum = 0;
+                for (int j = 0; j < i; ++j) {
+                    sum += L[i][j] * D[j] * l[j];
+                }
+                l[i] = (b[i] - sum) / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
+            }
+        }
+    }
+    int MMTbSolver::Solve(const matrix_t& M, const std::vector<double>& b) {
+        //solve MMTx=b
+        assert(M.size() == b.size());
+        LDL ldl;
+        forward.resize(M.size());
+        backward.resize(M.size());
+        ldl.Set(M);
+        ldl.Compute();
+        ndzero = 0;
+        std::vector<int> dzeroIndices(M.size(), -1);
+        int j = 0;
+        for (int i = 0; i < M.size(); ++i) {
+            if (std::fabs(ldl.GetD()[i]) < zeroTol) {
+                ndzero += 1;
+                dzeroIndices[j++] = i;
+            }
+        }
+        if (ndzero >= 0) {
+            SolveForward(ldl.GetL(), b);
+            SolveBackward(ldl.GetD(), ldl.GetL());
+        } else {
+            GetMMTKernel(dzeroIndices, ldl.GetL(), backward);
+        }
+        return ndzero;
+    }
+    void MMTbSolver::SolveForward(const matrix_t& L, const std::vector<double>& b) {
+        const int n = b.size();
+        for (int i = 0; i < n; ++i) {
+            double sum = 0.0;
+            for (int j = 0; j < i; ++j) {
+                sum += L[i][j] * forward[j];
+            }
+            forward[i] = b[i] - sum;
+        }
+    }
+    void MMTbSolver::SolveBackward(const std::vector<double>& D, const matrix_t& L) {
+        const int n = forward.size();
+        for (int i = n - 1; i >= 0; --i) {
+            double sum = 0.0;
+            for (int j = i + 1; j < n; ++j) {
+                sum += L[j][i] * D[i] * backward[j];
+            }
+            backward[i] = std::fabs(D[i]) < zeroTol ? 0.0 : (forward[i] - sum) / D[i];
+        }
+    }
+    void MMTbSolver::GetMMTKernel(const std::vector<int>& dzeroIndices, const matrix_t& L, std::vector<double>& ker) {
+
+        if (ndzero > 0) { // last element
+            const int zeroIndex = dzeroIndices.front();
+            std::fill(ker.begin(), ker.end(), 0.0);
+            const auto& row = L[zeroIndex];
+            //solve backward Lx = -l
+            for (int i = zeroIndex - 1; i >= 0; --i) {
+                double sum = 0.0;
+                for (int j = i + 1; j < zeroIndex; ++j) {
+                    sum += L[j][i] * ker[j];
+                }
+                ker[i] = -row[i] - sum;
+            }
+            ker[zeroIndex] = 1.0;
+        }
+
+    }
+    const std::vector<double>& MMTbSolver::GetSolution() {
+        return backward;
+    }
+    int MMTbSolver::nDZero() {
+        return ndzero;
+    }
+
 }

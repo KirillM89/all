@@ -1,10 +1,9 @@
-#include "NNLSQPSolver.h"
+#include "core.h"
 #include "scaler.h"
 #include <cmath>
 #include <algorithm>
 namespace QP_NNLS {
 Core::Core():
-    dbScaler(nullptr),
     timer(std::make_unique<wcTimer>()),
     uCallback(std::make_unique<Callback>())
 {

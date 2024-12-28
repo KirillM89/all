@@ -27,12 +27,10 @@ struct CompareSettings {
 	CompareSettings():
 		compareType(CompareType::RELATIVE),
 		qpSolver(QPSolvers::QLD)
-	{
-		uSettings.logLevel = 3;
-	}
+    {}
 	CompareType compareType;
 	QPSolvers qpSolver;
-	UserSettings uSettings;
+    Settings uSettings;
 };
 
 struct QPBaseline {
@@ -59,7 +57,7 @@ void TestLDL(const matrix_t& M);
 void TestLDLRemove(matrix_t& M ,int i);
 void TestLDLAdd(matrix_t& M, const std::vector<double>& vc);
 void TestMMTb(const matrix_t& M, const std::vector<double>& b);
-void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline);
+//void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline);
 void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings, const QPBaseline& baseline,
                      const std::string& logFile);
 double relativeVal(double a, double b);
@@ -162,11 +160,11 @@ class LinearTransformParametrized: public LinearTransform, public ::testing::Tes
 public:
 	LinearTransformParametrized() = default;
 	~LinearTransformParametrized() override = default;
-	void SetUserSettings(const QP_NNLS::UserSettings& settings);
+    void SetUserSettings(const QP_NNLS::Settings& settings);
 	virtual void TransformAndTest(const QP_NNLS_TEST_DATA::QPProblem& problem, const QPBaseline& baseline); 
 	virtual QPBaseline ComputeBaseline(const QP_NNLS_TEST_DATA::QPProblem& problem);
 protected:
-	QP_NNLS::UserSettings settings;
+    QP_NNLS::Settings settings;
 };
 
 class QPSolverComparator {
@@ -174,7 +172,7 @@ public:
 	QPSolverComparator() = default;
 	virtual ~QPSolverComparator() = default;
 	void Set(QPSolvers solverType, CompareType = CompareType::RELATIVE);
-	void Compare(const DenseQPProblem& problem, const UserSettings& settings, std::string logFile = "log.txt");
+    void Compare(const DenseQPProblem& problem, const Settings& settings, std::string logFile = "log.txt");
 protected:
 	QPSolvers solverType;
 	DenseQPProblem problem;
@@ -225,9 +223,7 @@ protected:
 };
 class QPTestBase {
 protected:
-	QPTestBase() {
-		settings.uSettings.logLevel = 3;
-	}
+    QPTestBase() = default;
 	void Set(const CompareSettings& settings) { this->settings = settings;}
 	QPBMComparator comparator;
 	CompareSettings settings;
@@ -333,7 +329,7 @@ protected:
 class QpTester: public ::testing::Test {
 protected:
     QpTester() {
-        tester.SetCoreSettings(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
+        tester.SetCoreSettings(QP_NNLS_TEST_DATA::NqpTestSettingsDefault);
         tester.SetReportFile(root + "report.txt");
     }
     void Test(const DenseQPProblem& problem,

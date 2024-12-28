@@ -1,8 +1,9 @@
 #include "utils.h"
 #include "test_utils.h"
 #include "test_data.h"
-#include "NNLSQPSolver.h"
+//#include "NNLSQPSolver.h"
 #include "TxtParser.h"
+#include "decorators.h"
 #include <algorithm>
 #include <string>
 
@@ -624,86 +625,58 @@ TEST(Solver, SolutionOnConstraintsIdentityHessTest1) {
 	QPBaseline baseline;
 	baseline.xOpt = {{-0.5, 0.5}};
 	baseline.cost = 0.25;
-#ifndef NEW_INTERFACE
-	TestSolver(case_2, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_2, NqpTestSettingsDefaultNewInterface, baseline, "test1.txt");
-#endif
+    TestSolverDense(case_2, NqpTestSettingsDefault, baseline, "test1.txt");
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest2) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0.5, 1.5}};
 	baseline.cost = 1.25;
-#ifndef NEW_INTERFACE
-	TestSolver(case_3, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_3, NqpTestSettingsDefaultNewInterface, baseline, "test2.txt");
-#endif
+    TestSolverDense(case_3, NqpTestSettingsDefault, baseline, "test2.txt");
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest3) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0.0, 1.0}};
 	baseline.cost = 0.5;
-#ifndef NEW_INTERFACE
-    TestSolver(case_4, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_4, NqpTestSettingsDefaultNewInterface, baseline, "test3.txt");
-#endif
+    TestSolverDense(case_4, NqpTestSettingsDefault, baseline, "test3.txt");
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest4) {
 	QPBaseline baseline;
 	baseline.xOpt = { {1.5, 2.5} };
 	baseline.cost = 4.25;
-#ifndef NEW_INTERFACE
-    TestSolver(case_5, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_5, NqpTestSettingsDefaultNewInterface, baseline, "test4.txt");
-#endif
+    TestSolverDense(case_5, NqpTestSettingsDefault, baseline, "test4.txt");
 }
 TEST(Solver, SolutionOnConstraintsIdentityHessTest5) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0, 1.0}};
 	baseline.cost = 0.5;
-#ifndef NEW_INTERFACE
-    TestSolver(case_6, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_6, NqpTestSettingsDefaultNewInterface, baseline, "test5.txt");
+    TestSolverDense(case_6, NqpTestSettingsDefault, baseline, "test5.txt");
 }
-#endif
 TEST(Solver, SolutionOnConstraintsIdentityHessTest6) {
 	QPBaseline baseline;
 	baseline.xOpt = { {-0.5, 1.5} };
 	baseline.cost = 1.25;
-#ifndef NEW_INTERFACE
-    TestSolver(case_7, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_7, NqpTestSettingsDefaultNewInterface, baseline, "test7.txt");
-#endif
+    TestSolverDense(case_7, NqpTestSettingsDefault, baseline, "test7.txt");
 }
 TEST_P(HessianParametrizedTest, SolutionOnConstraintsDiagHessSameValues) {
 	QPBaseline baseline;
 	baseline.xOpt = {{-0.5, 1.5}};
 	baseline.cost = 1.25 * GetScaleFactor();
 	SetModification(HessianParametrizedTest::Modification::DIAG_SCALING);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_7), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(getProblem(case_7), NqpTestSettingsDefaultNewInterface, baseline, "test8.txt");
-#endif
+    TestSolverDense(getProblem(case_7), NqpTestSettingsDefault, baseline, "test8.txt");
 }
 TEST_P(LinearTransformParametrized, Solver_T1) {
 	QP_NNLS_TEST_DATA::QPProblem problem;
@@ -754,30 +727,22 @@ TEST_P(HessianParametrizedTest, Solver_SolNotOnConstraintsT1) {
 	baseline.xOpt = {{ 0.0, 0.0}};
 	baseline.cost = 0.0;
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_18), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(getProblem(case_18), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_18), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST_P(HessianParametrizedTest, Solver_SolNotOnConstraintsT2) {
 	QPBaseline baseline;
 	baseline.xOpt = {{ 0.0, 0.0}};
 	baseline.cost = 0.0;
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_19), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(getProblem(case_19), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_19), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST_P(CompareRelHessParametrized, Solver_SolNotOnConstraintsParametrizedT1) {
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-	UserSettings settings = NqpTestSettingsDefault;
+    Settings settings = NqpTestSettingsDefault;
     //settings.cholPvtStrategy = CholPivotingStrategy::FULL;
 	this->settings.uSettings = settings;
 	QPProblem problem;
@@ -791,59 +756,39 @@ TEST_P(HessianParametrizedTest, Solver_SolNotOnConstraintsNarrowRegionT1) {
 	baseline.xOpt = {{ 0.0, 0.0}};
 	baseline.cost = 0.0;
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_20), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(getProblem(case_20), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_20), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST_P(HessianParametrizedTest, Solver_SolNotOnConstraintsNarrowRegionT2) {
 	QPBaseline baseline;
 	baseline.xOpt = {{ 0.0, 0.0}};
 	baseline.cost = 0.0;
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_25), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(getProblem(case_25), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_25), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT1) {
 	QPBaseline baseline;
 	baseline.dualStatus = DualLoopExitStatus::INFEASIBILITY;
     SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_21), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
-    TestSolverDense(getProblem(case_21), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_21), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT2) {
 	QPBaseline baseline;
 	baseline.dualStatus = DualLoopExitStatus::INFEASIBILITY;
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_22), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
-    TestSolverDense(getProblem(case_22), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_22), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST_P(HessianParametrizedTest, Solver_InfeasibleProblemT3) {
 	QPBaseline baseline;
 	baseline.dualStatus = DualLoopExitStatus::INFEASIBILITY;
 	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-#ifndef NEW_INTERFACE
-    TestSolver(getProblem(case_23), NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
-    TestSolverDense(getProblem(case_23), NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(getProblem(case_23), NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 INSTANTIATE_TEST_CASE_P(SUITE_1, HessianParametrizedTest, ::testing::Values(1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
 
@@ -851,98 +796,45 @@ TEST(Solver, RedundantConstraintsT1) {
 	QPBaseline baseline;
 	baseline.xOpt = {{0.0, 2.0}};
 	baseline.cost = 20.0;
-    UserSettings settings = NqpTestSettingsDefault;
-    settings.logLevel = 3;
-#ifndef NEW_INTERFACE
-    TestSolver(case_17, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_17, NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(case_17, NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST(Solver, RedundantConstraintsT2) {
 	QPBaseline baseline;
 	baseline.xOpt = { {0.0, 2.0} };
 	baseline.cost = 20.0;
-#ifndef NEW_INTERFACE
-    TestSolver(case_24, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_24, NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(case_24, NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST(Solver, FeasibleInitialPointT1) {
 	QPBaseline baseline;
 	baseline.xOpt =  { {-0.5, -0.5} };
 	baseline.cost = -0.5 * (case_fsbl_init_pnt_1.c[0] * case_fsbl_init_pnt_1.c[0] + case_fsbl_init_pnt_1.c[1] * case_fsbl_init_pnt_1.c[1]);
-#ifndef NEW_INTERFACE
-    TestSolver(case_fsbl_init_pnt_1, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_fsbl_init_pnt_1, NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(case_fsbl_init_pnt_1, NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST(Solver, FeasibleInitialPointT2) {
 	QPBaseline baseline;
 	baseline.xOpt =  { {-0.5, 0.5} };
 	baseline.cost = -0.5 * (case_fsbl_init_pnt_2.c[0] * case_fsbl_init_pnt_2.c[0] + case_fsbl_init_pnt_2.c[1] * case_fsbl_init_pnt_2.c[1]);
-#ifndef NEW_INTERFACE
-    TestSolver(case_fsbl_init_pnt_2, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_fsbl_init_pnt_2, NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(case_fsbl_init_pnt_2, NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
 TEST(Solver, FeasibleInitialPointT3) {
 	QPBaseline baseline;
 	baseline.xOpt =  { {-0.9999, 0.9999} };
 	baseline.cost = -0.5 * (case_fsbl_init_pnt_3.c[0] * case_fsbl_init_pnt_3.c[0] + case_fsbl_init_pnt_3.c[1] * case_fsbl_init_pnt_3.c[1]);
-#ifndef NEW_INTERFACE
-    TestSolver(case_fsbl_init_pnt_3, NqpTestSettingsDefault, baseline);
-#else
     baseline.primalStatus = PrimalLoopExitStatus::DIDNT_STARTED;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
-    TestSolverDense(case_fsbl_init_pnt_3, NqpTestSettingsDefaultNewInterface, baseline, "testHessParam.txt");
-#endif
+    TestSolverDense(case_fsbl_init_pnt_3, NqpTestSettingsDefault, baseline, "testHessParam.txt");
 }
-TEST_P(CompareRelHessParametrized, Solver_CompareQLDCholFullPivotingParametrizedT1) {
-	SetModification(HessianParametrizedTest::Modification::STRATEGY_1);
-	UserSettings settings = NqpTestSettingsDefault;
-	settings.cholPvtStrategy = CholPivotingStrategy::FULL;
-	this->settings.uSettings = settings;
-	QPProblem problem;
-	problem.c = { 0.0, 0.0 };
-	problem.A = { { 0.0, -1.0 } };
-	problem.b = { -1.0 };
-	comparator.Compare(getProblem(problem), "case_full_pivoting_prm1_" + std::to_string(static_cast<int>(GetParam())) + ".txt");
-}
+
 INSTANTIATE_TEST_CASE_P(SUITE_1, CompareRelHessParametrized, ::testing::Values(1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0));
 
-TEST_F(QPTestRelative, Solver_CompareQLDCholFullPivotingT1) {
-	settings.uSettings.cholPvtStrategy = CholPivotingStrategy::FULL;
-	comparator.Compare(case_chol_full_pvt_1, "chol_full_pivoting_t1.txt");
-}
-TEST_F(QPTestRelative, Solver_CompareQLDCholFullPivotingT2) {
-	settings.uSettings.cholPvtStrategy = CholPivotingStrategy::FULL;
-	comparator.Compare(case_chol_full_pvt_2, "chol_full_pivoting_t2.txt");
-}
-TEST_F(QPTestRelative, Solver_CompareQLDCholFullPivotingT3) {
-	settings.uSettings.cholPvtStrategy = CholPivotingStrategy::FULL;
-	QPProblem problem = case_chol_full_pvt_3;
-	//add corrections to hessian to activate pivoting
-	double corr = 1.0;
-	const double corrIncr = 100.0;
-	GetIdentityMatrix(problem.c.size(), problem.H);
-    for (int i = problem.H.size() - 1; i >= 0; --i) {
-		problem.H[i][i] = corr;
-		corr += corrIncr;
-	}
-	comparator.Compare(problem, "chol_full_pivoting_t3.txt");
-}
 #define QPTest QPTestCost
 TEST_F(QPTest, CASE_1) {
 	comparator.Compare(case_1, "case_1.txt");
