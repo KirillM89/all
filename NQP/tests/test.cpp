@@ -15,7 +15,12 @@ TEST(DataWriter, Test1) {
     using namespace FMT_WRITER;
     FmtWriter fw;
     fw.SetFile("testLog.txt");
-    fw.Write(1, 2, 3.0);
+    fw.Write("header1", "header 2", "header 3", "header 4", "header      5");
+    fw.Write(1.0, 2.0, 3.0, 4.0, 5.0);
+    fw.Write(1, 2, 3);
+    fw.Write(123423.23434, -234322.032424, 3.0, 44324423432.32442, 5.0);
+    fw.Write(123.3432e10, -1.0e-6, 0.0, 1.0e20, 1.0e-20);
+    fw.Write(1, 2, 3, 4, 900 ,10000, -10);
 }
 TEST(TxtParserTests, QPTEST) {
     TxtParser parser;
