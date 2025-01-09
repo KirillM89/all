@@ -1,7 +1,7 @@
 #include "test_utils.h"
 #include "utils.h"
-//#include "NNLSQPSolver.h"
 #include "qp.h"
+#include "data_writer.h"
 
 bool isNumber(const double& val) {
 	return std::isfinite(val);
@@ -879,27 +879,46 @@ void DenseQPTester::ComputeDualityGap(const DenseQPProblem& problem) {
     result.dualityGap  = xHx + cTx + bTL - lTL + uTL;
 }
 void DenseQPTester::FillReport() {
-    logger.SetFile(reportFile, false);
-    logger.message(problemName, "vars", result.nVariables,
-                   "constraints", result.nConstraints,
-                   "iterations", result.nIterations);
-    if (!result.errMsg.empty()) {
-        logger.message(problemName, result.errMsg);
-    } else {
-
-        logger.message("| max constr violation", result.maxPrInfsbC,
-                       "| violated value", result.violatedC,
-                       "| n constr violations", result.nPrInfsbC,
-                       "| max bounds violation", result.maxPrInfsbB,
-                       "| violated value", result.violatedB,
-                       "| n bnds violations", result.nPrInfsbB,
-                       "| primal cost", output.cost,
-                       "| duality gap", result.dualityGap,
-                       "| max dual violation",  result.maxDlInfsb,
-                       "| max negative dual", result.maxNegDl
-                       );
+    using namespace FMT_WRITER;
+    if (logger.LineNumber() % 20 == 0) {
+        logger.Write("test name",
+                     "n variables",
+                     "n constraints",
+                     "n iterations",
+                     "status",
+                     "max pr infsb cnstr",
+                     "violated value",
+                     "n violated",
+                     "max pr infsb bnds",
+                     "violated value",
+                     "n violated",
+                     "primal cost",
+                     "duality gap",
+                     "max dual infsb",
+                     "max negative dual");
+        logger.NewLine();
     }
-    logger.flush();
+
+    logger.Write(problemName,
+                 result.nVariables,
+                 result.nConstraints,
+                 result.nIterations);
+    if (!result.errMsg.empty()) {
+        logger.Write(result.errMsg);
+    } else {
+        logger.Write("solved",
+                     result.maxPrInfsbC,
+                     result.violatedC,
+                     result.nPrInfsbC,
+                     result.maxPrInfsbB,
+                     result.violatedB,
+                     result.nPrInfsbB,
+                     output.cost,
+                     result.dualityGap,
+                     result.maxDlInfsb,
+                     result.maxNegDl);
+    }
+    logger.NewLine();
 }
 
 

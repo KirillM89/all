@@ -20,7 +20,32 @@ TEST(DataWriter, Test1) {
     fw.Write(1, 2, 3);
     fw.Write(123423.23434, -234322.032424, 3.0, 44324423432.32442, 5.0);
     fw.Write(123.3432e10, -1.0e-6, 0.0, 1.0e20, 1.0e-20);
+    fw.Write(1, -2, 3, 4, -900 ,10000, -10);
+}
+TEST(DataWriter, Test2) {
+    using namespace FMT_WRITER;
+    FmtWriter fw;
+    fw.SetFile("testLog.txt");
     fw.Write(1, 2, 3, 4, 900 ,10000, -10);
+    double x = 1.0;
+    fw.Write(x);
+    const std::string s = "abc";
+    fw.Write(s);
+    fw.Write(s, x);
+}
+TEST(DataWriter, Test3) {
+    using namespace FMT_WRITER;
+    FmtWriter fw;
+    fw.SetFile("testLog3.txt");
+    fw.Write(1, 2, 3, 4, 900 ,10000, -10);
+    fw.NewLine();
+    double x = 1.0;
+    fw.Write(x);
+    fw.NewLine();
+    const std::string s = "abc";
+    fw.Write(s);
+    fw.Write(s, x);
+    fw.NewLine();
 }
 TEST(TxtParserTests, QPTEST) {
     TxtParser parser;
@@ -1031,7 +1056,7 @@ TEST_F(QpTesterMM, EQ_DUALC5) {
 TEST_F(QpTesterMM, EQ_DUALC8) {
     Test("DUALC8", false);
 }
-// medium
+//medium
 TEST_F(QpTesterMM, EQ_DUAL1) {
     Test("DUAL1", false);
 }

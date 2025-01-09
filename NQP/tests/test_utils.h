@@ -12,6 +12,7 @@
 #include "TxtParser.h"
 #include "configuration.h"
 #include "decorators.h"
+#include "data_writer.h"
 
 
 static std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -305,7 +306,7 @@ public:
     void SetCheckConditions(const QpCheckConditions& conditions);
     void SetUserCallback(std::unique_ptr<Callback> callback);
     void SetReportFile(const std::string& file) {
-        reportFile = file;
+        logger.SetFile(file);
     };
     const QPTestResult& Test(const DenseQPProblem& problem,
                              const std::string& problemName = "");
@@ -321,7 +322,7 @@ protected:
     QpCheckConditions cc;
     std::string problemName;
     std::string reportFile;
-    Logger logger;
+    FMT_WRITER::FmtWriter logger;
     double xHx = 0.0;
     double cTx = 0.0;
     double bTL = 0.0;
