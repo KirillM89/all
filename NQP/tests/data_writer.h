@@ -8,28 +8,34 @@
 #include <cassert>
 namespace FMT_WRITER {
 
-template <typename T> struct IsDumpAble {
-    static const bool value = false;
+template <typename T> struct IsStringType {
+    static const bool value = std::is_convertible_v<T, const std::string&>;
 };
 
-template <> struct IsDumpAble<double&> {
+template<typename T> struct IsFloatType {
+    static const bool value = false;
+};
+template <> struct IsFloatType<double&> {
     static const bool value = true;
 };
-template <> struct IsDumpAble<int&> {
+template <> struct IsFloatType<float&> {
     static const bool value = true;
 };
-template <> struct IsDumpAble<unsigned int&> {
+template <typename T> struct IsIntegralType {
+    static const bool value = false;
+};
+template <> struct IsIntegralType<int&> {
     static const bool value = true;
 };
-template <> struct IsDumpAble<const char*> {
+template <> struct IsIntegralType<unsigned int&> {
     static const bool value = true;
 };
-template <> struct IsDumpAble<const std::string&> {
-    static const bool value = true;
+template <typename T> struct IsDumpAble {
+    static const bool value = IsStringType<T>::value ||
+            IsIntegralType<T>::value ||
+            IsFloatType<T>::value;
 };
-template <> struct IsDumpAble<std::string&> {
-    static const bool value = true;
-};
+
 
 class FmtWriter {
 
@@ -43,39 +49,18 @@ public:
         ++deep;
         Write(sym);
         Write(args...);
-        if ((--deep) == 0) {
-            Dump(std::string_view(fmt), std::make_format_args(sym, args...));
-            fmt.clear();
-        }
+        --deep;
+        ToFile(sym, args...);
     }
     template<typename T, std::enable_if_t<IsDumpAble<T>::value, bool> = true> constexpr void Write(T&& sym) {
-        if (std::is_same_v<T, double&>) {
+        if (IsFloatType<T>::value) {
             Append(fmtDouble);
-        } else if (std::is_same_v<T, int&> || std::is_same_v<T, unsigned int&> ) {
+        } else if (IsIntegralType<T>::value) {
             Append(fmtInt);
-        } else if (std::is_same_v<T, const std::string&> ||
-                   std::is_same_v<T, const char*> ||
-                   std::is_same_v<T, std::string&>) {
+        } else if (IsStringType<T>::value) {
             Append(fmtStr);
         }
-        if ((deep) == 0) {
-            Dump(std::string_view(fmt), std::make_format_args(sym));
-            fmt.clear();
-        }
-    }
-    void Write(const char* sym) {
-        Append(fmtStr);
-        if ((deep) == 0) {
-            Dump(std::string_view(fmt), std::make_format_args(sym));
-            fmt.clear();
-        }
-    }
-    void Write(const std::string& sym) {
-        Append(fmtStr);
-        if ((deep) == 0) {
-            Dump(std::string_view(fmt), std::make_format_args(sym));
-            fmt.clear();
-        }
+        ToFile(sym);
     }
 
     void Reset();
@@ -97,9 +82,16 @@ private:
     constexpr void Append(const std::string& tail) {
         fmt += " " + tail;
     }
+    template<typename ...Args> void ToFile(Args&&... args) {
+        if (deep == 0) {
+            Dump(std::string_view(fmt), std::make_format_args(args...));
+            fmt.clear();
+        }
+    }
     void Dump(std::string_view fmt, std::format_args&& args) {
         fid << std::vformat(fmt, args);
     }
+
 };
 }
 

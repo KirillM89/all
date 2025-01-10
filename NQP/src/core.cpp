@@ -192,10 +192,6 @@ void Core::ComputeDualVariable() {
     for (unsg_t i = 0; i < nConstraints; ++i) {
         ws.dual[i] += styGamma * ws.s[i];
     }
-    // correction of dual variables
-    for (auto& indx : ws.activeConstraints) {
-        //ws.dual[indx] = 0.0;
-    }
     styGamma = gamma + DotProduct(ws.s, ws.primal);
 }
 bool Core::SkipCandidate(unsg_t indx) {

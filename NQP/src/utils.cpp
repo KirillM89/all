@@ -622,7 +622,7 @@ namespace QP_NNLS {
 			}
 		}
 	}
-	void          MultStrictLowTriangular(const matrix_t& M1, const matrix_t& M2, matrix_t& M1M2, int m1Bg, int m2Bg) {
+    void  MultStrictLowTriangular(const matrix_t& M1, const matrix_t& M2, matrix_t& M1M2, int m1Bg, int m2Bg) {
 		//Computes M1 * M2, where M1 and M2 are strict lower triangular matrices, m1Bg - first non-zero row in M1, m2Bg - first non-zero row in M2
 		//M1M2 must be filled with zero in advance
 		//M1 size  = M2 size

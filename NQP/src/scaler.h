@@ -54,7 +54,7 @@ public:
                 // check if ratio is in valid bounds
                 scaleFactorSL = std::fmin(rat, scaleFactorSL);
             } else {
-                double bf = 1.0;
+                double bf = 1.0; // balance factor
                 if (rat <  thMin) {
                     bf = rat / thMin;  // < 1
                 } else if (rat > thMax){
@@ -105,7 +105,6 @@ public:
     const ScaleCoefs& GetScaleCoefs() {
         return sCoefs;
     }
-
 private:
     matrix_t& M;
     std::vector<double>& s;
