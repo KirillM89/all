@@ -52,6 +52,7 @@ public:
     bool InitProblem(const DenseQPProblem& problem);
     void Solve();
     const SolverOutput& GetOutput() { return output; }
+    InitStageStatus GetInitStatus() { return initStatus; }
 private:
     unsg_t nVariables;
     unsg_t nConstraints;
@@ -78,6 +79,7 @@ private:
     std::unique_ptr<ILinSolver> lSolver;
     std::unique_ptr<OrtScaler> ortScaler;
     SolverOutput output;
+    InitStageStatus initStatus;
     bool PrepareNNLS(const DenseQPProblem& problem);
     bool OrigInfeasible();
     bool FullActiveSet();

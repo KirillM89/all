@@ -36,7 +36,6 @@ template <typename T> struct IsDumpAble {
             IsFloatType<T>::value;
 };
 
-
 class FmtWriter {
 
 public:

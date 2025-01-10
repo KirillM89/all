@@ -751,16 +751,22 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
     result.Reset();
     if(!solver.SetProblem(problem)) {
         result.status = false;
-        result.errMsg = "failed to set problem";
-        return result;
-    }
-    solver.Solve();
-    output = solver.GetOutput();
-    CheckOutput(output);
-    if (result.status) {
-        ComputePrInfeasibility(problem);
-        ComputeDlInfeasibility(problem);
-        ComputeDualityGap(problem);
+        result.errMsg.clear();
+        InitStageStatus initStatus = solver.GetInitStatus();
+        if (initStatus == InitStageStatus::CHOLETSKY) {
+            result.errMsg = "choletsky";
+        } else if (initStatus == InitStageStatus::MATRIX_INVERSION) {
+            result.errMsg = "mat inversion";
+        }
+    } else {
+        solver.Solve();
+        output = solver.GetOutput();
+        CheckOutput(output);
+        if (result.status) {
+            ComputePrInfeasibility(problem);
+            ComputeDlInfeasibility(problem);
+            ComputeDualityGap(problem);
+        }
     }
     FillReport();
     return result;

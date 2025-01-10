@@ -66,7 +66,8 @@ enum class GammaUpdateStrategyDual {
 
 enum class InitStageStatus {
     SUCCESS = 0,
-    CHOLETSKY
+    CHOLETSKY,
+    MATRIX_INVERSION,
 };
 
 struct LinSolverOutput {

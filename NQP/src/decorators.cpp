@@ -14,16 +14,16 @@ namespace QP_NNLS {
             isInitialized = true;
         }
     }
-
     void QPNNLS::SetCallback(std::unique_ptr<Callback> callback) {
         core->SetCallback(std::move(callback));
     }
-
     const SolverOutput& QPNNLS::GetOutput() {
         output = core->GetOutput();
         return output;
+    }   
+    bool QPNNLS::VerifySettings(const Settings& settings) {
+        return true;
     }
-
     bool QPNNLSDense::SetProblem(const DenseQPProblem& problem) {
         if (!isInitialized) {
             return false;
@@ -31,13 +31,13 @@ namespace QP_NNLS {
         core->ResetProblem();
         return core->InitProblem(problem);
     }
-
     void QPNNLSDense::Solve() {
         core->Solve();
     }
-
-    bool QPNNLS::VerifySettings(const Settings& settings) {
-        return true;
+    InitStageStatus QPNNLSDense::GetInitStatus() {
+        return core->GetInitStatus();
     }
+
+
 }
 

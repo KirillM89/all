@@ -65,7 +65,9 @@ void Core::SetCallback(std::unique_ptr<Callback> callback) {
     }
 }
 bool Core::InitProblem(const DenseQPProblem &problem) {
-    bool stat = PrepareNNLS(problem);
+    if (!PrepareNNLS(problem)) {
+        return false;
+    }
     uCallback->initData.Chol = ws.Chol;
     uCallback->initData.CholInv = ws.CholInv;
     uCallback->initData.M = ws.M;
@@ -74,7 +76,7 @@ bool Core::InitProblem(const DenseQPProblem &problem) {
     uCallback->initData.b = ws.b;
     uCallback->initData.scaleDB = scaleFactorDB;
     uCallback -> ProcessData(1);
-    return stat;
+    return true;
 }
 void Core::AllocateWs() {
     ws.primal.resize(nConstraints, 0.0);
@@ -109,6 +111,7 @@ void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
     ws.violations.resize(nConstraints, 0.0);
 }
 bool Core::PrepareNNLS(const DenseQPProblem &problem) {
+    initStatus = InitStageStatus::SUCCESS;
     nVariables = static_cast<unsg_t>(problem.H.size());
     nConstraints = static_cast<unsg_t>(problem.A.size());
     for (unsg_t i = 0; i < nEqConstraints; ++i) {
@@ -121,12 +124,12 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
     SetRptInterval();
     AllocateWs();
+    //uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
     timer->Start();
-
     if (settings.cholPvtStrategy == CholPivotingStrategy::NO_PIVOTING) {
         CholetskyOutput cholOutput;
         if(!ComputeCholFactorT(problem.H, ws.Chol, cholOutput)) {   // H = L_T * L
-            uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
+            initStatus = InitStageStatus::CHOLETSKY;
             return false;
         }
     } else if (settings.cholPvtStrategy == CholPivotingStrategy::FULL) {
@@ -135,9 +138,9 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
         // x == P * x_n;  P - permuation matrix
         // 0.5 * x_T * H * x + c * x = 0.5 * x_n_T * P_T * H * P * x_n + c_T * P * x_n = 0.5 * x_n_T * H_n * x_n + c_n_T * x_n
         // H_n = P_T * H * P ; c_n = P_T * c
-        // A * x <= b  A * P *x_n <= b  A_n = A * P   A_n * x_n <= b
+        // A * x <= b  A * P * x_n <= b  A_n = A * P   A_n * x_n <= b
         if (ComputeCholFactorTFullPivoting(ws.H, ws.Chol, ws.pmt) != 0) { // H -> H_n
-            uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
+            initStatus = InitStageStatus::CHOLETSKY;
             return false;
         }
         PermuteColumns(ws.Jac, ws.pmt);

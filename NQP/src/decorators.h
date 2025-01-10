@@ -27,6 +27,7 @@ namespace QP_NNLS {
     public:
         bool SetProblem(const DenseQPProblem& problem);
         void Solve();
+        InitStageStatus GetInitStatus();
     };
 
     class QPNNLSSparse : public QPNNLS {
