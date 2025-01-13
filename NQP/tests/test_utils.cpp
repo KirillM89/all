@@ -66,6 +66,36 @@ void TestInvertGauss(const matrix_t& m) {
 		}
 	}
 }
+void TestInvertHermit(const matrix_t& m) {
+    matrix_t cholF(m.size(), std::vector<double>(m.size(), 0.0));
+    CholetskyOutput output;
+    ComputeCholFactorT(m, cholF, output);
+    matrix_t mInv = cholF;
+    InvertHermit(cholF, mInv);
+    matrix_t mult(m.size(), std::vector<double>(m.size()));
+    Mult(m, mInv, mult);
+    const double eps = 1.0e-7;
+    for (int i = 0; i < m.size(); ++i) {
+        for (int j = 0; j < m.size(); ++j) {
+            EXPECT_NEAR(mult[i][j], i == j ? 1.0 : 0.0, eps);
+        }
+    }
+}
+void TestInvertCholetsky(const matrix_t& m) {
+    matrix_t cholF(m.size(), std::vector<double>(m.size(), 0.0));
+    CholetskyOutput output;
+    ComputeCholFactorT(m, cholF, output);
+    matrix_t mInv = cholF;
+    InvertCholetsky(cholF, mInv);
+    matrix_t mult(m.size(), std::vector<double>(m.size()));
+    Mult(cholF, mInv, mult);
+    const double eps = 1.0e-7;
+    for (int i = 0; i < m.size(); ++i) {
+        for (int j = 0; j < m.size(); ++j) {
+            EXPECT_NEAR(mult[i][j], i == j ? 1.0 : 0.0, eps);
+        }
+    }
+}
 void TestLinearTransformation(const QP_NNLS_TEST_DATA::QPProblem& problem,
 							  const matrix_t& trMatrix, const QP_NNLS_TEST_DATA::QPProblem& bl) {
 	LinearTransform tr;

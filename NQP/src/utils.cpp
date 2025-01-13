@@ -1,10 +1,9 @@
 #include "utils.h"
 #include <cmath>
 #include <iostream>
-#ifdef EIGEN
+
 #include <Eigen/Dense>
 #include <Eigen/Core>
-#endif
 
 //#define TEST_MODE
 namespace QP_NNLS {
@@ -285,17 +284,17 @@ namespace QP_NNLS {
         // Interchange the row of matrix,
         // interchanging of row will start from the last row
         for (int i = n - 1; i > 0; i--) {
-            if (Mtmp[i - 1][0] < Mtmp[i][0]) {
+            if (std::fabs(Mtmp[i - 1][0]) < std::fabs(Mtmp[i][0])) {
                 Mtmp[i].swap(Mtmp[i - 1]);
 				Minv[i].swap(Minv[i - 1]);
             }
         }
 
         for (int i = 0; i < n; i++) {
-			const double tmp = std::fabs(Mtmp[i][i]) < CONSTANTS::pivotZero ? CONSTANTS::pivotZero : Mtmp[i][i];
+            const double tmp = std::fabs(Mtmp[i][i]) < CONSTANTS::pivotZero ? 1.0 / CONSTANTS::pivotZero : 1.0 / Mtmp[i][i];
             for (int j = 0; j < n; j++) {
                 if (j != i) {
-                    double temp = Mtmp[j][i] / tmp;
+                    double temp = Mtmp[j][i] * tmp;
                     for (int k = 0; k < n; k++) {
 						Minv[j][k] -= Minv[i][k] * temp;
 						Mtmp[j][k] -= Mtmp[i][k] * temp;
@@ -307,7 +306,7 @@ namespace QP_NNLS {
         // Multiply each row by a nonzero integer.
         // Divide row element by the diagonal element
         for (int i = 0; i < n; i++) {
-            double temp = 1 / Mtmp[i][i];
+            const double temp = std::fabs(Mtmp[i][i]) < CONSTANTS::pivotZero ? 1.0 / CONSTANTS::pivotZero : 1.0 / Mtmp[i][i];
             for (int j = 0; j < n; j++) {
                 Mtmp[i][j] = Mtmp[i][j] * temp;
 				Minv[i][j] = Minv[i][j] * temp;
@@ -360,6 +359,38 @@ namespace QP_NNLS {
 			std::swap(NP, NNP);
 		}
 	}
+
+    void InvertHermit(const matrix_t& Chol, matrix_t& Inv) {
+        //Inv must be allocated in advance
+        //M = Chol_T * Chol, Chol - low triangular matrix
+        const std::size_t n = Chol.size();
+        for (int r = 0; r < n; ++r) {
+            const double diagInv = 1.0 / Chol[r][r];
+            for (int c = 0; c <= r; ++c) {
+                Inv[r][c] = (c == r) ? diagInv : 0.0;
+                for (int i = 0; i < r; ++i) {
+                    Inv[r][c] -= Chol[r][i] * Inv[i][c];
+                }
+                Inv[r][c] *= diagInv;
+                Inv[c][r] = Inv[r][c];
+            }
+        }
+    }
+    void InvertCholetsky(const matrix_t& Chol, matrix_t& Inv) {
+        //Inv must be allocated with zeros in advance
+        //M = Chol_T * Chol, Chol - low triangular matrix
+        const std::size_t n = Chol.size();
+        for (int r = 0; r < n; ++r) {
+            const double diagInv = 1.0 / Chol[r][r];
+            for (int c = 0; c <= r; ++c) {
+                Inv[r][c] = (c == r) ? 1.0 : 0.0;
+                for (int i = 0; i < r; ++i) {
+                    Inv[r][c] -= Chol[r][i] * Inv[i][c];
+                }
+                Inv[r][c] *= diagInv;
+            }
+        }
+    }
 #ifdef EIGEN
 	void InvertEigen(const matrix_t& M, matrix_t& Inv) {
 		const int m = M.size();

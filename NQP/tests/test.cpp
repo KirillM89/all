@@ -361,6 +361,35 @@ TEST(Utils, Randomized_InvertByGaussLowTriangle) {
 		}
 	}
 }
+TEST(Utils, InvertHermitT1) {
+    const matrix_t M = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    TestInvertHermit(M);
+}
+TEST(Utils, InvertHermitT2) {
+    const matrix_t M = {{2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
+    TestInvertHermit(M);
+}
+TEST(Utils, InvertHermitT3) {
+    const matrix_t M = {{3.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 1.0}};
+    TestInvertHermit(M);
+}
+TEST(Utils, Randomized_InvertHermitT1) {
+    TestInvertHermit(GetRandomPosSemidefMatrix(3, -1.0, 1.0));
+}
+TEST(Utils, Randomized_InvertHermitT2) {
+    TestInvertHermit(GetRandomPosSemidefMatrix(10, -1.0, 1.0));
+}
+TEST(Utils, InvertCholetskyT1) {
+    const matrix_t M = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    TestInvertCholetsky(M);
+}
+TEST(Utils, InvertCholetskyT2) {
+    const matrix_t M = {{2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
+    TestInvertCholetsky(M);
+}
+TEST(Utils, Randomized_InvertCholetskyT1) {
+    TestInvertCholetsky(GetRandomPosSemidefMatrix(10, -1.0, 1.0));
+}
 TEST(Utils, M1M2T_1) {
 	const matrix_t M = { {1.0, 2.0}, {3.0, 4.0} };
 	const matrix_t baseline = { {5.0, 11.0}, {11.0, 25.0} };

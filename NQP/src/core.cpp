@@ -147,7 +147,7 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
         PTV(ws.c, ws.pmt);
     }
     TimePoint(uCallback -> initData.tChol);
-    InvertTriangle(ws.Chol, ws.CholInv);   // Q^-1
+    InvertCholetsky(ws.Chol, ws.CholInv);   // Q^-1
     TimePoint(uCallback -> initData.tInv);
     Mult(ws.Jac, ws.CholInv, ws.M);           // M = A * Q^-1   nConstraints x nVariables
     TimePoint(uCallback -> initData.tM);

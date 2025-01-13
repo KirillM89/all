@@ -67,6 +67,10 @@ namespace QP_NNLS {
 
     void PTV(std::vector<double>& v, const std::vector<int>& pmt); // v -> P_T * v
 
+    void InvertHermit(const matrix_t& Chol, matrix_t& Inv); // invert hemitian matrix M using it's Choletsky decomposition M = L * L_T
+
+    void InvertCholetsky(const matrix_t& Chol, matrix_t& Inv); // invert hemitian matrix M using it's Choletsky decomposition M = L * L_T
+
 	matrix_t& operator-(matrix_t& M); // M -> -M
 
 	static inline bool isSame(double cand, double val, double tol = 1.0e-16) {

@@ -13,7 +13,7 @@ using matrix_t = std::vector<std::vector<double>>;
 using unsg_t = unsigned int;
 namespace CONSTANTS {
     constexpr double cholFactorZero = 1.0e-7;
-	constexpr double pivotZero = 1.0e-14;
+    constexpr double pivotZero = 1.0e-7;
 }
 static_assert(CONSTANTS::cholFactorZero > 0.0);
 static_assert(CONSTANTS::pivotZero > 0.0);

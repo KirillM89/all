@@ -55,6 +55,8 @@ void TestMatrixMult(const matrix_t& m1, const matrix_t& m2, const matrix_t& base
 void TestMatrixMultTranspose(const matrix_t& m, const std::vector<double>& v, const std::vector<double> & baseline);
 void TestMatrixMultStrictLowTriangular(const matrix_t& m1, const matrix_t& m2);
 void TestInvertGauss(const matrix_t& m);
+void TestInvertHermit(const matrix_t& m);
+void TestInvertCholetsky(const matrix_t& m);
 void TestLinearTransformation(const QP_NNLS_TEST_DATA::QPProblem& problem, const matrix_t& trMatrix, 
 							  const QP_NNLS_TEST_DATA::QPProblem& bl);
 void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline);
