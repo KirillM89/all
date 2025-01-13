@@ -30,6 +30,7 @@ const QP_NNLS::DenseQPProblem& TxtParser::Parse(const std::string& file, bool& s
     } else {
         status = false;
     }
+    std::cout << "read";
     return problem;
 }
 
@@ -39,6 +40,7 @@ bool TxtParser::OpenFile(const std::string& file) {
         fid.seekg(0, fid.end);
         fSize = fid.tellg();
         curPos = 0;
+        bufPos = 0;
         fid.seekg(0, fid.beg);
         return true;
     }
@@ -74,7 +76,11 @@ bool TxtParser::ReadMatrix(QP_NNLS::matrix_t& m) {
     m.clear();
     assert(fSize > curPos);
     const unsigned int rSize = std::min(BUFFER_SIZE, fSize - curPos);
-    fid.read(&buf[0], rSize);
+    if (fid.tellg() != -1) {
+        std::cout << " off" << fid.tellg();
+        fid.read(&buf[0], rSize);
+        bufPos = 0;
+    }
     bool matBgFound = false;
     while (true) {
         const char nextToken = FindNextToken();
@@ -91,6 +97,7 @@ bool TxtParser::ReadMatrix(QP_NNLS::matrix_t& m) {
                 }
             } else if (nextToken == '}') {
                 ++curPos;
+                ++bufPos;
                 return true;
             } else {
                 abort();
@@ -104,7 +111,7 @@ bool TxtParser::ReadVector(std::vector<double>& v) {
     bool bgFound = false;
     std::string value;
     while (curPos < fSize) {
-        const char el = buf[curPos];
+        const char el = buf[bufPos];
         if (!bgFound) {
             if (el == '{') {
                 bgFound = true;
@@ -124,23 +131,26 @@ bool TxtParser::ReadVector(std::vector<double>& v) {
                     v.push_back(std::stod(value));
                 }
                 ++curPos;
+                ++bufPos;
                 return true;
             } else {
 
             }
         }
         ++curPos;
+        ++bufPos;
     }
     return false;
 }
 
 char TxtParser::FindNextToken() {
     while (curPos < fSize) {
-        const char token = buf[curPos];
+        const char token = buf[bufPos];
         if (token == '{' || token == '}') {
             return token;
         }
         ++curPos;
+        ++bufPos;
     }
     return '!'; // not found
 }

@@ -9,7 +9,7 @@ namespace TXT_QP_PARSER {
 
 const unsigned int MAX_VALUE_LENGTH = 20U;
 const unsigned int MAX_VALUES = 1000000U;
-const unsigned int BUFFER_SIZE = 1.5 * MAX_VALUE_LENGTH * MAX_VALUES;
+const unsigned int BUFFER_SIZE = 100 * MAX_VALUE_LENGTH * MAX_VALUES;
 
 enum class DENSE_PROBLEM_FORMAT {
     LEFT_RIGHT = 0, // lw <= Ax <= up
@@ -35,6 +35,7 @@ private:
     char buf[BUFFER_SIZE];
     unsigned int fSize = 0;
     unsigned int curPos = 0;
+    unsigned int bufPos = 0;
     bool OpenFile(const std::string& file);
     void ParseHessian();
     void ParseJacobian();
