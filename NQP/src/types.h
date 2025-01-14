@@ -1,16 +1,19 @@
 
+#ifndef NNLS_QP_SOLVER_TYPES_H
+#define NNLS_QP_SOLVER_TYPES_H
 #include <vector>
 #include <list>
 #include <string>
+#include <deque>
+#include <unordered_set>
+#include <set>
 #include "timers.h"
-#ifndef NNLS_QP_SOLVER_TYPES_H
-#define NNLS_QP_SOLVER_TYPES_H
 namespace QP_NNLS {
 using matrix_t = std::vector<std::vector<double>>;
 using unsg_t = unsigned int;
 namespace CONSTANTS {
-	constexpr double cholFactorZero = 1.0e-14;
-	constexpr double pivotZero = 1.0e-14;
+    constexpr double cholFactorZero = 1.0e-7;
+    constexpr double pivotZero = 1.0e-7;
 }
 static_assert(CONSTANTS::cholFactorZero > 0.0);
 static_assert(CONSTANTS::pivotZero > 0.0);
@@ -63,7 +66,8 @@ enum class GammaUpdateStrategyDual {
 
 enum class InitStageStatus {
     SUCCESS = 0,
-    CHOLETSKY
+    CHOLETSKY,
+    MATRIX_INVERSION,
 };
 
 struct LinSolverOutput {
@@ -80,9 +84,9 @@ struct ActiveSetUpdateSettings {
 };
 
 struct CoreSettings {
-    LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
+    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
     //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
-    //LinSolverType linSolverType = LinSolverType::MSS1;
+    LinSolverType linSolverType = LinSolverType::MSS1;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
     unsg_t nDualIterations = 1000;

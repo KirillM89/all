@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <set>
 #include "types.h"
-#include "decorators.h"
 #define CPP_FORMAT
 namespace QP_NNLS {
 #define SEP " "
@@ -87,15 +86,6 @@ private:
     std::ofstream fid;
     std::string logFile;
     void ToNewLine();
-};
-
-class Callback1 : public Callback {
-public:
-    Callback1(const std::string& filePath);
-    virtual ~Callback1() override = default;
-    void ProcessData(int stage) override;
-private:
-    std::unique_ptr<Logger> logger;
 };
 
 }

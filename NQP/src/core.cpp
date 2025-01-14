@@ -1,10 +1,9 @@
-#include "NNLSQPSolver.h"
+#include "core.h"
 #include "scaler.h"
 #include <cmath>
 #include <algorithm>
 namespace QP_NNLS {
 Core::Core():
-    dbScaler(nullptr),
     timer(std::make_unique<wcTimer>()),
     uCallback(std::make_unique<Callback>())
 {
@@ -22,6 +21,7 @@ void Core::WorkSpace::Clear() {
     c.clear();
     b.clear();
     activeConstraints.clear();
+    linEqConstraints.clear();
     negativeZp.clear();
     v.clear();
     slack.clear();
@@ -65,7 +65,9 @@ void Core::SetCallback(std::unique_ptr<Callback> callback) {
     }
 }
 bool Core::InitProblem(const DenseQPProblem &problem) {
-    bool stat = PrepareNNLS(problem);
+    if (!PrepareNNLS(problem)) {
+        return false;
+    }
     uCallback->initData.Chol = ws.Chol;
     uCallback->initData.CholInv = ws.CholInv;
     uCallback->initData.M = ws.M;
@@ -74,7 +76,7 @@ bool Core::InitProblem(const DenseQPProblem &problem) {
     uCallback->initData.b = ws.b;
     uCallback->initData.scaleDB = scaleFactorDB;
     uCallback -> ProcessData(1);
-    return stat;
+    return true;
 }
 void Core::AllocateWs() {
     ws.primal.resize(nConstraints, 0.0);
@@ -109,21 +111,25 @@ void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
     ws.violations.resize(nConstraints, 0.0);
 }
 bool Core::PrepareNNLS(const DenseQPProblem &problem) {
+    initStatus = InitStageStatus::SUCCESS;
     nVariables = static_cast<unsg_t>(problem.H.size());
     nConstraints = static_cast<unsg_t>(problem.A.size());
+    for (unsg_t i = 0; i < nEqConstraints; ++i) {
+        ws.linEqConstraints.insert(i);
+    }
+    ws.activeConstraints = ws.linEqConstraints;
     nEqConstraints = problem.nEqConstraints;
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
     SetRptInterval();
     AllocateWs();
-    dbScaler =  std::make_unique<DBScaler>(settings.dbScalerStrategy);
+    //uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
     timer->Start();
-
     if (settings.cholPvtStrategy == CholPivotingStrategy::NO_PIVOTING) {
         CholetskyOutput cholOutput;
         if(!ComputeCholFactorT(problem.H, ws.Chol, cholOutput)) {   // H = L_T * L
-            uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
+            initStatus = InitStageStatus::CHOLETSKY;
             return false;
         }
     } else if (settings.cholPvtStrategy == CholPivotingStrategy::FULL) {
@@ -132,23 +138,21 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
         // x == P * x_n;  P - permuation matrix
         // 0.5 * x_T * H * x + c * x = 0.5 * x_n_T * P_T * H * P * x_n + c_T * P * x_n = 0.5 * x_n_T * H_n * x_n + c_n_T * x_n
         // H_n = P_T * H * P ; c_n = P_T * c
-        // A * x <= b  A * P *x_n <= b  A_n = A * P   A_n * x_n <= b
+        // A * x <= b  A * P * x_n <= b  A_n = A * P   A_n * x_n <= b
         if (ComputeCholFactorTFullPivoting(ws.H, ws.Chol, ws.pmt) != 0) { // H -> H_n
-            uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
+            initStatus = InitStageStatus::CHOLETSKY;
             return false;
         }
         PermuteColumns(ws.Jac, ws.pmt);
         PTV(ws.c, ws.pmt);
     }
     TimePoint(uCallback -> initData.tChol);
-    InvertTriangle(ws.Chol, ws.CholInv);   // Q^-1
+    InvertCholetsky(ws.Chol, ws.CholInv);   // Q^-1
     TimePoint(uCallback -> initData.tInv);
     Mult(ws.Jac, ws.CholInv, ws.M);           // M = A * Q^-1   nConstraints x nVariables
     TimePoint(uCallback -> initData.tM);
     MultTransp(ws.CholInv, ws.c, ws.v);    // v = Q^-T * d nVariables
     std::vector<double> MByV(nConstraints);
-    //MBScaler mbScaler(ws.Jac, ws.M, ws.b);
-   // mbScaler.Scale();
     Mult(ws.M, ws.v, MByV);                // M * v nConstraints
     VSum(MByV, ws.b, ws.s);
     ortScaler = std::make_unique<OrtScaler>(ws.M, ws.s);
@@ -191,10 +195,6 @@ void Core::ComputeDualVariable() {
     for (unsg_t i = 0; i < nConstraints; ++i) {
         ws.dual[i] += styGamma * ws.s[i];
     }
-    // correction of dual variables
-    for (auto& indx : ws.activeConstraints) {
-        //ws.dual[indx] = 0.0;
-    }
     styGamma = gamma + DotProduct(ws.s, ws.primal);
 }
 bool Core::SkipCandidate(unsg_t indx) {
@@ -228,8 +228,10 @@ void Core::AddToActiveSet(unsg_t indx) {
     lSolver->Add(ws.M[indx], ws.s[indx], indx);
 }
 void Core::RmvFromActiveSet(unsg_t indx) {
-    ws.activeConstraints.erase(indx);
-    lSolver->Delete(indx);
+    if (ws.linEqConstraints.find(indx) == ws.linEqConstraints.end()) {
+        ws.activeConstraints.erase(indx);
+        lSolver->Delete(indx);
+    }
 }
 
 bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare, bool skip) {
@@ -379,13 +381,12 @@ void Core::UnscaleD() {
 }
 void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
-        gamma = sqrt(std::fabs(gamma - gammaCorrection));
+        gamma = std::fabs(gamma - gammaCorrection);
     }
 }
 void Core::UpdateGammaOnDualIteration() {
     if (settings.gammaUpdate == true) {
-        gamma += sqrt(std::fabs(ws.s[newActiveIndex]));
-        gamma = std::fmin(gamma, 1.0e7);
+        gamma += std::fabs(ws.s[newActiveIndex]);
     }
 }
 void Core::ComputeCost() {

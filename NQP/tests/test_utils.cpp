@@ -1,7 +1,7 @@
 #include "test_utils.h"
 #include "utils.h"
-#include "NNLSQPSolver.h"
 #include "qp.h"
+#include "data_writer.h"
 
 bool isNumber(const double& val) {
 	return std::isfinite(val);
@@ -65,6 +65,36 @@ void TestInvertGauss(const matrix_t& m) {
 			EXPECT_NEAR(mult[i][j], i == j ? 1.0 : 0.0, eps);
 		}
 	}
+}
+void TestInvertHermit(const matrix_t& m) {
+    matrix_t cholF(m.size(), std::vector<double>(m.size(), 0.0));
+    CholetskyOutput output;
+    ComputeCholFactorT(m, cholF, output);
+    matrix_t mInv = cholF;
+    InvertHermit(cholF, mInv);
+    matrix_t mult(m.size(), std::vector<double>(m.size()));
+    Mult(m, mInv, mult);
+    const double eps = 1.0e-7;
+    for (int i = 0; i < m.size(); ++i) {
+        for (int j = 0; j < m.size(); ++j) {
+            EXPECT_NEAR(mult[i][j], i == j ? 1.0 : 0.0, eps);
+        }
+    }
+}
+void TestInvertCholetsky(const matrix_t& m) {
+    matrix_t cholF(m.size(), std::vector<double>(m.size(), 0.0));
+    CholetskyOutput output;
+    ComputeCholFactorT(m, cholF, output);
+    matrix_t mInv = cholF;
+    InvertCholetsky(cholF, mInv);
+    matrix_t mult(m.size(), std::vector<double>(m.size()));
+    Mult(cholF, mInv, mult);
+    const double eps = 1.0e-7;
+    for (int i = 0; i < m.size(); ++i) {
+        for (int j = 0; j < m.size(); ++j) {
+            EXPECT_NEAR(mult[i][j], i == j ? 1.0 : 0.0, eps);
+        }
+    }
 }
 void TestLinearTransformation(const QP_NNLS_TEST_DATA::QPProblem& problem,
 							  const matrix_t& trMatrix, const QP_NNLS_TEST_DATA::QPProblem& bl) {
@@ -261,7 +291,7 @@ void TestMMTb(const matrix_t& M, const std::vector<double>& b) {
 		EXPECT_LT(std::fabs((b[i] - mmtx[i]) / b[i]), 1.0e-3) << "baseline=" << b[i] << " sol=" << mmtx[i] << " i=" << i;
 	}
 }
-
+/*
 void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline) {
 	ProblemReader pr;
 	pr.Init(problem.H, problem.c, problem.A, problem.b);
@@ -316,7 +346,7 @@ void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings&
 		}
 	}
 	EXPECT_TRUE(passed);
-}
+}  */
 
 void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings,
                      const QPBaseline& baseline, const std::string& logPath) {
@@ -454,7 +484,7 @@ void QPSolverComparator::Set(QPSolvers solverType, CompareType compareType) {
 	this->compareType = compareType;
 }
 
-void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettings& settings, std::string logFile) {
+void QPSolverComparator::Compare(const DenseQPProblem& problem, const Settings& settings, std::string logFile) {
 	QP_SOLVERS::QPInput input;
 	QP_SOLVERS::QPOutput output;
 	input.m_H = problem.H;
@@ -475,8 +505,7 @@ void QPSolverComparator::Compare(const DenseQPProblem& problem, const UserSettin
         std::cout << "CONSTRAINTS VIOLATIONS BASELINE END" << std::endl;
 	} 
     QP_NNLS::QPNNLSDense solver;
-    solver.SetCallback(std::make_unique<Callback1>(settings.logFile));
-    solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
+    solver.Init(QP_NNLS_TEST_DATA::NqpTestSettingsDefault);
     ASSERT_TRUE(solver.SetProblem(problem));
     solver.Solve();
     SolverOutput soutput = solver.GetOutput();
@@ -699,11 +728,10 @@ void QPBMComparator::Compare(const QP_NNLS_TEST_DATA::QPProblem& problem, const 
 	DenseQPProblem qpProblem = pr.getProblem();
 	QPSolverComparator qpComparator;
 	qpComparator.Set(settings.qpSolver, settings.compareType);
-    settings.uSettings.logFile = logFile;
     qpComparator.Compare(qpProblem, settings.uSettings);
 }
 
-void LinearTransformParametrized::SetUserSettings(const QP_NNLS::UserSettings& settings) {
+void LinearTransformParametrized::SetUserSettings(const QP_NNLS::Settings& settings) {
 	this->settings = settings;
 }
 void LinearTransformParametrized::TransformAndTest(const QP_NNLS_TEST_DATA::QPProblem& problem, const QPBaseline& baseline) {
@@ -714,24 +742,20 @@ void LinearTransformParametrized::TransformAndTest(const QP_NNLS_TEST_DATA::QPPr
 	Mult(trMatInv, baseline.xOpt.front(), baselineTr.xOpt.front()); //Xnew = M-1*Xold
 	LinearTransform tr;
 	tr.setQPProblem(problem);
-	//cost doesn't cahnge in linear transformation 
-#ifndef NEW_INTERFACE
-    TestSolver(tr.transform(trMat), settings, baselineTr);
-#else
-    TestSolverDense(tr.transform(trMat), QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface, baselineTr, "testTransform.txt");
-#endif
+    TestSolverDense(tr.transform(trMat), QP_NNLS_TEST_DATA::NqpTestSettingsDefault, baselineTr, "testTransform.txt");
 }
 QPBaseline LinearTransformParametrized::ComputeBaseline(const QP_NNLS_TEST_DATA::QPProblem& problem) {
-	NNLSQPSolver solver;
+    QPNNLSDense solver;
 	ProblemReader pr; 
 	pr.Init(problem.H, problem.c, problem.A, problem.b);
 	DenseQPProblem dProblem = pr.getProblem();
-	ProblemSettings problemNNLS(settings, dProblem);
-	solver.Init(problemNNLS);
-	solver.Solve();
-	QPBaseline baseline;
-	baseline.xOpt = {solver.getXOpt()};
-	baseline.cost = solver.getCost();
+    solver.Init(settings);
+    solver.SetProblem(dProblem);
+    solver.Solve();
+    SolverOutput output = solver.GetOutput();
+    QPBaseline baseline;
+    baseline.xOpt = {output.x};
+    baseline.cost = output.cost;
     baseline.primalStatus = PrimalLoopExitStatus::ALL_PRIMAL_POSITIVE;
     baseline.dualStatus = DualLoopExitStatus::ALL_DUAL_POSITIVE;
 	return baseline;
@@ -757,16 +781,22 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
     result.Reset();
     if(!solver.SetProblem(problem)) {
         result.status = false;
-        result.errMsg = "failed to set problem";
-        return result;
-    }
-    solver.Solve();
-    output = solver.GetOutput();
-    CheckOutput(output);
-    if (result.status) {
-        ComputePrInfeasibility(problem);
-        ComputeDlInfeasibility(problem);
-        ComputeDualityGap(problem);
+        result.errMsg.clear();
+        InitStageStatus initStatus = solver.GetInitStatus();
+        if (initStatus == InitStageStatus::CHOLETSKY) {
+            result.errMsg = "choletsky";
+        } else if (initStatus == InitStageStatus::MATRIX_INVERSION) {
+            result.errMsg = "mat inversion";
+        }
+    } else {
+        solver.Solve();
+        output = solver.GetOutput();
+        CheckOutput(output);
+        if (result.status) {
+            ComputePrInfeasibility(problem);
+            ComputeDlInfeasibility(problem);
+            ComputeDualityGap(problem);
+        }
     }
     FillReport();
     return result;
@@ -885,27 +915,46 @@ void DenseQPTester::ComputeDualityGap(const DenseQPProblem& problem) {
     result.dualityGap  = xHx + cTx + bTL - lTL + uTL;
 }
 void DenseQPTester::FillReport() {
-    logger.SetFile(reportFile, false);
-    logger.message(problemName, "vars", result.nVariables,
-                   "constraints", result.nConstraints,
-                   "iterations", result.nIterations);
-    if (!result.errMsg.empty()) {
-        logger.message(problemName, result.errMsg);
-    } else {
-
-        logger.message("| max constr violation", result.maxPrInfsbC,
-                       "| violated value", result.violatedC,
-                       "| n constr violations", result.nPrInfsbC,
-                       "| max bounds violation", result.maxPrInfsbB,
-                       "| violated value", result.violatedB,
-                       "| n bnds violations", result.nPrInfsbB,
-                       "| primal cost", output.cost,
-                       "| duality gap", result.dualityGap,
-                       "| max dual violation",  result.maxDlInfsb,
-                       "| max negative dual", result.maxNegDl
-                       );
+    using namespace FMT_WRITER;
+    if (logger.LineNumber() % 20 == 0) {
+        logger.Write("test name",
+                     "n variables",
+                     "n constraints",
+                     "n iterations",
+                     "status",
+                     "max pr infsb cnstr",
+                     "violated value",
+                     "n violated",
+                     "max pr infsb bnds",
+                     "violated value",
+                     "n violated",
+                     "primal cost",
+                     "duality gap",
+                     "max dual infsb",
+                     "max negative dual");
+        logger.NewLine();
     }
-    logger.flush();
+
+    logger.Write(problemName,
+                 result.nVariables,
+                 result.nConstraints,
+                 result.nIterations);
+    if (!result.errMsg.empty()) {
+        logger.Write(result.errMsg);
+    } else {
+        logger.Write("solved",
+                     result.maxPrInfsbC,
+                     result.violatedC,
+                     result.nPrInfsbC,
+                     result.maxPrInfsbB,
+                     result.violatedB,
+                     result.nPrInfsbB,
+                     output.cost,
+                     result.dualityGap,
+                     result.maxDlInfsb,
+                     result.maxNegDl);
+    }
+    logger.NewLine();
 }
 
 

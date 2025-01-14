@@ -1,3 +1,6 @@
+#ifndef NNLS_TESTS_UTILS_H
+#define NNLS_TESTS_UTILS_H
+
 #include <random>
 #include <cmath>
 #include <algorithm>
@@ -7,9 +10,11 @@
 #include "qp.h"
 #include "log.h"
 #include "TxtParser.h"
-#define NEW_INTERFACE
-#ifndef NNLS_TESTS_UTILS_H
-#define NNLS_TESTS_UTILS_H
+#include "configuration.h"
+#include "decorators.h"
+#include "data_writer.h"
+
+
 static std::random_device rd;  // Will be used to obtain a seed for the random number engine
 static std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 enum class CompareType {
@@ -27,12 +32,10 @@ struct CompareSettings {
 	CompareSettings():
 		compareType(CompareType::RELATIVE),
 		qpSolver(QPSolvers::QLD)
-	{
-		uSettings.logLevel = 3;
-	}
+    {}
 	CompareType compareType;
 	QPSolvers qpSolver;
-	UserSettings uSettings;
+    Settings uSettings;
 };
 
 struct QPBaseline {
@@ -52,6 +55,8 @@ void TestMatrixMult(const matrix_t& m1, const matrix_t& m2, const matrix_t& base
 void TestMatrixMultTranspose(const matrix_t& m, const std::vector<double>& v, const std::vector<double> & baseline);
 void TestMatrixMultStrictLowTriangular(const matrix_t& m1, const matrix_t& m2);
 void TestInvertGauss(const matrix_t& m);
+void TestInvertHermit(const matrix_t& m);
+void TestInvertCholetsky(const matrix_t& m);
 void TestLinearTransformation(const QP_NNLS_TEST_DATA::QPProblem& problem, const matrix_t& trMatrix, 
 							  const QP_NNLS_TEST_DATA::QPProblem& bl);
 void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline);
@@ -59,7 +64,7 @@ void TestLDL(const matrix_t& M);
 void TestLDLRemove(matrix_t& M ,int i);
 void TestLDLAdd(matrix_t& M, const std::vector<double>& vc);
 void TestMMTb(const matrix_t& M, const std::vector<double>& b);
-void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline);
+//void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline);
 void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings, const QPBaseline& baseline,
                      const std::string& logFile);
 double relativeVal(double a, double b);
@@ -162,11 +167,11 @@ class LinearTransformParametrized: public LinearTransform, public ::testing::Tes
 public:
 	LinearTransformParametrized() = default;
 	~LinearTransformParametrized() override = default;
-	void SetUserSettings(const QP_NNLS::UserSettings& settings);
+    void SetUserSettings(const QP_NNLS::Settings& settings);
 	virtual void TransformAndTest(const QP_NNLS_TEST_DATA::QPProblem& problem, const QPBaseline& baseline); 
 	virtual QPBaseline ComputeBaseline(const QP_NNLS_TEST_DATA::QPProblem& problem);
 protected:
-	QP_NNLS::UserSettings settings;
+    QP_NNLS::Settings settings;
 };
 
 class QPSolverComparator {
@@ -174,7 +179,7 @@ public:
 	QPSolverComparator() = default;
 	virtual ~QPSolverComparator() = default;
 	void Set(QPSolvers solverType, CompareType = CompareType::RELATIVE);
-	void Compare(const DenseQPProblem& problem, const UserSettings& settings, std::string logFile = "log.txt");
+    void Compare(const DenseQPProblem& problem, const Settings& settings, std::string logFile = "log.txt");
 protected:
 	QPSolvers solverType;
 	DenseQPProblem problem;
@@ -225,9 +230,7 @@ protected:
 };
 class QPTestBase {
 protected:
-	QPTestBase() {
-		settings.uSettings.logLevel = 3;
-	}
+    QPTestBase() = default;
 	void Set(const CompareSettings& settings) { this->settings = settings;}
 	QPBMComparator comparator;
 	CompareSettings settings;
@@ -297,7 +300,6 @@ struct QpCheckConditions {
 
 };
 
-#include "decorators.h"
 class DenseQPTester {
 public:
     DenseQPTester() = default;
@@ -306,7 +308,7 @@ public:
     void SetCheckConditions(const QpCheckConditions& conditions);
     void SetUserCallback(std::unique_ptr<Callback> callback);
     void SetReportFile(const std::string& file) {
-        reportFile = file;
+        logger.SetFile(file);
     };
     const QPTestResult& Test(const DenseQPProblem& problem,
                              const std::string& problemName = "");
@@ -322,7 +324,7 @@ protected:
     QpCheckConditions cc;
     std::string problemName;
     std::string reportFile;
-    Logger logger;
+    FMT_WRITER::FmtWriter logger;
     double xHx = 0.0;
     double cTx = 0.0;
     double bTL = 0.0;
@@ -333,31 +335,32 @@ protected:
 class QpTester: public ::testing::Test {
 protected:
     QpTester() {
-        tester.SetCoreSettings(QP_NNLS_TEST_DATA::NqpTestSettingsDefaultNewInterface);
-        tester.SetReportFile(root + "report.txt");
+        tester.SetCoreSettings(QP_NNLS_TEST_DATA::NqpTestSettingsDefault);
+        tester.SetReportFile(TST_CONFIG::LOG_DIR + "report.txt");
     }
     void Test(const DenseQPProblem& problem,
               const std::string& problemName) {
         ProblemReader pr;
         pr.Init(problem.H, problem.c, problem.A, problem.b);
-        tester.SetUserCallback(std::make_unique<Callback1>(root +"cases/" + problemName + ".txt"));
+        tester.SetUserCallback(std::make_unique<Callback1>(TST_CONFIG::LOG_DIR +"cases/" + problemName + ".txt"));
         tester.Test(pr.getProblem(), problemName);
     }
     DenseQPTester tester;
-    const std::string root = "C:/Users/m00829527/nqp/nqp/NQP/Log/";
 };
 
 class QpTesterMM : public QpTester {
 protected:
-    QpTesterMM(): QpTester()
+    QpTesterMM():
+        QpTester()
     {}
-    void Test(const std::string& caseName) {
+    void Test(const std::string& caseName, bool noEqC = true) {
+        const std::string& TxtQpRoot = noEqC ?  TST_CONFIG::DENSE_ONLY_INQ_CONSTR_PATH
+                                              : TST_CONFIG::DENSE_INQ_AND_EQ_CONSTR_PATH;
         const DenseQPProblem pr = fmt.PrepareProblem(TxtQpRoot + caseName + ".txt");
-        tester.SetUserCallback(std::make_unique<Callback1>(root +"cases/" + caseName + ".txt"));
+        tester.SetUserCallback(std::make_unique<Callback1>(TST_CONFIG::LOG_DIR +"cases/" + caseName + ".txt"));
         tester.Test(pr, caseName);
     }
     TXT_QP_PARSER::DenseProblemFormatter fmt;
-    const std::string TxtQpRoot = "C:/Users/m00829527/nqp/nqp/benchmarks/maros_meszaros_txt/Dense/noEq/";
 };
 
 

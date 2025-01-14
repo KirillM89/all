@@ -67,6 +67,10 @@ namespace QP_NNLS {
 
     void PTV(std::vector<double>& v, const std::vector<int>& pmt); // v -> P_T * v
 
+    void InvertHermit(const matrix_t& Chol, matrix_t& Inv); // invert hemitian matrix M using it's Choletsky decomposition M = L * L_T
+
+    void InvertCholetsky(const matrix_t& Chol, matrix_t& Inv); // invert hemitian matrix M using it's Choletsky decomposition M = L * L_T
+
 	matrix_t& operator-(matrix_t& M); // M -> -M
 
 	static inline bool isSame(double cand, double val, double tol = 1.0e-16) {
@@ -74,5 +78,55 @@ namespace QP_NNLS {
 		const double diff = cand - val;
 		return ((diff >= -tol) && (diff <= tol));
 	}
+
+    class LDL
+    {
+    public:
+        // L*D*LT = A*AT
+        LDL() = default;
+        virtual ~LDL() = default;
+        void Set(const matrix_t& A);
+        void Compute();
+        void Add(const std::vector<double>& row);
+        void Remove(int i);
+        const matrix_t& GetL();
+        const std::vector<double>& GetD();
+    protected:
+        int dimR = 0;
+        int dimC = 0;
+        int curIndex = 0;
+        double d = 0.0;
+        matrix_t L;
+        std::vector<double> D;
+        matrix_t A;
+        std::vector<double> l;
+        void compute_l();
+        void compute_d();
+        void update_L();
+        void update_D();
+        void solveLDb(const std::vector<double>& b, std::vector<double>& l);
+        double getARowNormSquared(int row) const;
+        void update_L_remove(int iRow, const matrix_t& Ltil);
+        std::vector<int> activeRows;
+    };
+
+    class MMTbSolver
+    {
+    public:
+        MMTbSolver() = default;
+        virtual ~MMTbSolver() = default;
+        int Solve(const matrix_t& M, const std::vector<double>& b);
+        int nDZero();
+        const std::vector<double>& GetSolution();
+    protected:
+        void SolveForward(const matrix_t& L, const std::vector<double>& b);
+        void SolveBackward(const std::vector<double>& D, const matrix_t& L);
+        void GetMMTKernel(const std::vector<int>& dzeroIndices, const matrix_t& L,std::vector<double>& ker);
+        std::vector<double> solution;
+        std::vector<double> forward;
+        std::vector<double> backward;
+        const double zeroTol = 1.0e-16;
+        int ndzero = 0;
+    };
 }
 #endif

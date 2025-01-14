@@ -1,66 +1,9 @@
 #ifndef QP_NNLS_DECORATORS_H
 #define QP_NNLS_DECORATORS_H
 #include <memory>
-#include <vector>
-#include <deque>
-#include <unordered_set>
-#include <set>
 #include "types.h"
+#include "callback.h"
 namespace QP_NNLS {
-    struct IterationData {
-       std::deque<unsg_t>* activeSetHistory;
-       std::vector<double>* dual;
-       std::vector<double>* primal;
-       std::vector<double>* violations;
-       std::vector<double>* zp;
-       std::set<unsg_t>* activeSet;
-       double gamma;
-       double dualTol;
-       double rsNorm;
-       unsg_t newIndex;
-       unsg_t iteration;
-       bool singular;
-    };
-
-    struct FinalData {
-        PrimalLoopExitStatus primalStatus;
-        DualLoopExitStatus dualStatus;
-        unsg_t nIterations;
-        double cost;
-        std::vector<double> violations;
-        std::vector<double> x;
-        std::vector<double> lambda;
-        std::vector<double> lambdaUp;
-        std::vector<double> lambdaLw;
-    };
-
-    struct InitializationData {
-        double scaleDB;
-        std::string tChol;
-        std::string tInv;
-        std::string tM;
-        std::vector<double> s;
-        std::vector<double> b;
-        std::vector<double> c;
-        matrix_t Chol;
-        matrix_t CholInv;
-        matrix_t M;
-        InitStageStatus InitStatus;
-    };
-
-
-    class Callback {
-    public:
-        Callback() = default;
-        virtual ~Callback() = default;
-        virtual void ProcessData(int stage) {
-            return;
-        };
-        InitializationData initData;
-        IterationData iterData;
-        FinalData finalData;
-    };
-
     class Core;
     class QPNNLS {
     public:
@@ -69,7 +12,7 @@ namespace QP_NNLS {
         const SolverOutput& GetOutput();
     protected:
         QPNNLS();
-         ~QPNNLS() = default;
+         ~QPNNLS();
         QPNNLS(const QPNNLS& other) = delete;
         QPNNLS(QPNNLS&& other) = delete;
         QPNNLS& operator=(const QPNNLS& other) = delete;
@@ -84,13 +27,13 @@ namespace QP_NNLS {
     public:
         bool SetProblem(const DenseQPProblem& problem);
         void Solve();
+        InitStageStatus GetInitStatus();
     };
 
     class QPNNLSSparse : public QPNNLS {
     public:
         void Solve(const SparseQPProblem& problem);
     };
-
 }
 
 #endif // DECORATORS_H

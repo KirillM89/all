@@ -1,5 +1,5 @@
 #include "linSolvers.h"
-#include "NNLSQPSolver.h" // MMTBSolver
+#include "utils.h"
 namespace QP_NNLS {
 CumulativeSolver::CumulativeSolver(const matrix_t& M,
                                    const std::vector<double>& s ):
