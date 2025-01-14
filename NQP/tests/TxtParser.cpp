@@ -30,7 +30,6 @@ const QP_NNLS::DenseQPProblem& TxtParser::Parse(const std::string& file, bool& s
     } else {
         status = false;
     }
-    std::cout << "read";
     return problem;
 }
 
@@ -77,7 +76,6 @@ bool TxtParser::ReadMatrix(QP_NNLS::matrix_t& m) {
     assert(fSize > curPos);
     const unsigned int rSize = std::min(BUFFER_SIZE, fSize - curPos);
     if (fid.tellg() != -1) {
-        std::cout << " off" << fid.tellg();
         fid.read(&buf[0], rSize);
         bufPos = 0;
     }

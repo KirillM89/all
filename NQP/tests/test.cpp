@@ -1183,7 +1183,7 @@ TEST_F(QpTesterMM, EQ_QSCTAP1) {
 TEST_F(QpTesterMM, EQ_QSCAGR25) {
     Test("QSCAGR25", false);
 }
-// > 10 000 KB
+// > 10 MB
 TEST_F(QpTesterMM, EQ_QGROW15) {
     Test("QGROW15", false);
 }
