@@ -91,6 +91,7 @@ struct CoreSettings {
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
     unsg_t nDualIterations = 1000;
     unsg_t nPrimalIterations = 100;
+    unsg_t logLevel = 0;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
     double nnlsPrimalZero = -1.0e-7; //-1.0e-7; //zp < 0 => zp < nnlsPrimalZero
@@ -98,6 +99,7 @@ struct CoreSettings {
     double prLtZero = 1.0e-14;
     bool gammaUpdate = true;
     ActiveSetUpdateSettings actSetUpdtSettings;
+
 };
 
 struct Settings {

@@ -81,13 +81,15 @@ private:
     SolverOutput output;
     InitStageStatus initStatus;
     bool PrepareNNLS(const DenseQPProblem& problem);
+    bool ComputeCholetsky(const matrix_t& M);
     bool OrigInfeasible();
     bool FullActiveSet();
     bool SkipCandidate(unsg_t indx);
     bool MakeLineSearch();
     bool IsCandidateForNewActive(unsg_t index, double toCompare, bool skip = true);
     void SetDefaultSettings();
-    void TimePoint(std::string& buf);
+    void TimeInterval(std::string& buf);
+    void ScaleProblem();
     void ScaleD();
     void UnscaleD();
     void ComputeDualVariable();
@@ -105,6 +107,8 @@ private:
     void ComputeDualityGap();
     void ComputeViolationsExplicitly();
     void FillOutput();
+    void SetInitData();
+    void SetLinearSolver();
     void SetIterationData();
     void SetFinalData();
     void SetRptInterval();

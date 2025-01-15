@@ -23,29 +23,35 @@ namespace QP_NNLS {
         DualLoopExitStatus dualStatus;
         unsg_t nIterations;
         double cost;
-        std::vector<double> violations;
-        std::vector<double> x;
-        std::vector<double> lambda;
-        std::vector<double> lambdaUp;
-        std::vector<double> lambdaLw;
+        std::vector<double>* violations;
+        std::vector<double>* x;
+        std::vector<double>* lambda;
+        std::vector<double>* lambdaUp;
+        std::vector<double>* lambdaLw;
     };
     struct InitializationData {
         double scaleDB;
         std::string tChol;
         std::string tInv;
         std::string tM;
-        std::vector<double> s;
-        std::vector<double> b;
-        std::vector<double> c;
-        matrix_t Chol;
-        matrix_t CholInv;
-        matrix_t M;
+        std::vector<double>* s;
+        std::vector<double>* b;
+        std::vector<double>* c;
+        matrix_t* Chol;
+        matrix_t* CholInv;
+        matrix_t* M;
         InitStageStatus InitStatus;
     };
     class Callback {
     public:
         Callback() = default;
         virtual ~Callback() = default;
+        virtual void Init() {
+            return;
+        }
+        virtual void SetLogLevel(unsg_t logLevel) {
+            return;
+        }
         virtual void ProcessData(int stage) {
             return;
         };
@@ -59,8 +65,14 @@ namespace QP_NNLS {
         Callback1(const std::string& filePath);
         virtual ~Callback1() override = default;
         void ProcessData(int stage) override;
+        void SetLogLevel(unsg_t logLevel) override {
+            this -> logLevel = logLevel;
+        }
+        void Init() override;
     private:
+        const std::string filePath;
         std::unique_ptr<Logger> logger;
+        unsg_t logLevel = 0u;
     };
 }
 

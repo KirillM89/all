@@ -68,14 +68,9 @@ bool Core::InitProblem(const DenseQPProblem &problem) {
     if (!PrepareNNLS(problem)) {
         return false;
     }
-    uCallback->initData.Chol = ws.Chol;
-    uCallback->initData.CholInv = ws.CholInv;
-    uCallback->initData.M = ws.M;
-    uCallback->initData.s = ws.s;
-    uCallback->initData.c = ws.c;
-    uCallback->initData.b = ws.b;
-    uCallback->initData.scaleDB = scaleFactorDB;
-    uCallback -> ProcessData(1);
+    uCallback->SetLogLevel(settings.logLevel);
+    uCallback->Init();
+    SetInitData();
     return true;
 }
 void Core::AllocateWs() {
@@ -124,11 +119,36 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
     SetRptInterval();
     AllocateWs();
-    //uCallback->initData.InitStatus = InitStageStatus::CHOLETSKY;
     timer->Start();
+    ComputeCholetsky(problem.H);
+    Mult(ws.Jac, ws.CholInv, ws.M);           // M = A * Q^-1   nConstraints x nVariables
+    TimeInterval(uCallback -> initData.tM);
+    MultTransp(ws.CholInv, ws.c, ws.v);    // v = Q^-T * d nVariables
+    Mult(ws.M, ws.v, ws.s);                // M * v nConstraints
+    VSum(ws.s, ws.b, ws.s);
+    ScaleProblem();
+    SetLinearSolver();
+    return true;
+}
+void Core::TimeInterval(std::string& buf) {
+    TimeIntervals tIntervals;
+    timer->toIntervals(timer->Ticks(), tIntervals);
+    buf = std::to_string(tIntervals.minutes) + " min " +
+          std::to_string(tIntervals.sec) + " sec " +
+          std::to_string(tIntervals.ms) + " ms " +
+          std::to_string(tIntervals.mus) + " mus";
+}
+bool Core::OrigInfeasible() {
+    MultTransp(ws.M, ws.primal, ws.activeConstraints, ws.MTY); // M_T * primal
+    styGamma = gamma + DotProduct(ws.s, ws.primal, ws.activeConstraints);
+    rsNorm = DotProduct(ws.MTY, ws.MTY) + styGamma * styGamma;
+    return rsNorm < settings.nnlsResidNormFsb;
+}
+bool Core::ComputeCholetsky(const matrix_t& M) {
+    timer->Ticks();
     if (settings.cholPvtStrategy == CholPivotingStrategy::NO_PIVOTING) {
         CholetskyOutput cholOutput;
-        if(!ComputeCholFactorT(problem.H, ws.Chol, cholOutput)) {   // H = L_T * L
+        if(!ComputeCholFactorT(M, ws.Chol, cholOutput)) {   // H = L_T * L
             initStatus = InitStageStatus::CHOLETSKY;
             return false;
         }
@@ -146,47 +166,11 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
         PermuteColumns(ws.Jac, ws.pmt);
         PTV(ws.c, ws.pmt);
     }
-    TimePoint(uCallback -> initData.tChol);
-    InvertCholetsky(ws.Chol, ws.CholInv);   // Q^-1
-    TimePoint(uCallback -> initData.tInv);
-    Mult(ws.Jac, ws.CholInv, ws.M);           // M = A * Q^-1   nConstraints x nVariables
-    TimePoint(uCallback -> initData.tM);
-    MultTransp(ws.CholInv, ws.c, ws.v);    // v = Q^-T * d nVariables
-    std::vector<double> MByV(nConstraints);
-    Mult(ws.M, ws.v, MByV);                // M * v nConstraints
-    VSum(MByV, ws.b, ws.s);
-    ortScaler = std::make_unique<OrtScaler>(ws.M, ws.s);
-    ortScaler -> Scale();
-    const ScaleCoefs& sCoefs = ortScaler -> GetScaleCoefs();
-    scaleFactorDB = sCoefs.scaleFactorS;
-    settings.origPrimalFsb *= scaleFactorDB;
-    ScaleD();
-    if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
-        lSolver = std::make_unique<CumulativeLDLTSolver>(ws.M, ws.s);
-    } else if (settings.linSolverType == LinSolverType::CUMULATIVE_EG_LDLT) {
-        lSolver = std::make_unique<CumulativeEGNSolver>(ws.M, ws.s);
-    }
-    else if (settings.linSolverType == LinSolverType::MSS1) {
-        lSolver = std::make_unique<MssCumulativeSolver>(ws.M, ws.s);
-    }
+    TimeInterval(uCallback->initData.tChol);
+    InvertCholetsky(ws.Chol, ws.CholInv);
+    TimeInterval(uCallback->initData.tInv);
     return true;
 }
-void Core::TimePoint(std::string& buf) {
-    TimeIntervals tIntervals;
-    timer->toIntervals(timer->Ticks(), tIntervals);
-    buf = std::to_string(tIntervals.minutes) + " min " +
-          std::to_string(tIntervals.sec) + " sec " +
-          std::to_string(tIntervals.ms) + " ms " +
-          std::to_string(tIntervals.mus) + " mus";
-}
-
-bool Core::OrigInfeasible() {
-    MultTransp(ws.M, ws.primal, ws.activeConstraints, ws.MTY); // M_T * primal
-    styGamma = gamma + DotProduct(ws.s, ws.primal, ws.activeConstraints);
-    rsNorm = DotProduct(ws.MTY, ws.MTY) + styGamma * styGamma;
-    return rsNorm < settings.nnlsResidNormFsb;
-}
-
 bool Core::FullActiveSet() {
     return (static_cast<unsg_t>(ws.activeConstraints.size()) == nConstraints);
 }
@@ -347,10 +331,16 @@ int Core::UpdatePrimal() {
     }
     return res;
 }
+void Core::ScaleProblem() {
+    ortScaler = std::make_unique<OrtScaler>(ws.M, ws.s);
+    ortScaler -> Scale();
+    const ScaleCoefs& sCoefs = ortScaler -> GetScaleCoefs();
+    scaleFactorDB = sCoefs.scaleFactorS;
+    settings.origPrimalFsb *= scaleFactorDB;
+    ScaleD();
+}
 
 void Core::ScaleD() {
-    //dbScaler = std::make_unique<DBScaler>(st.dbScalerStrategy);
-    //scaleFactorDB = dbScaler -> Scale(ws.M, ws.s, st);
     const unsg_t n = std::max(nConstraints, nVariables);
     for (unsg_t i = 0; i < n; ++i) {
         if (i < nConstraints) {
@@ -489,38 +479,66 @@ void Core::FillOutput() {
     }
     output.nDualIterations = dualIteration;
 }
-
+void Core::SetInitData() {
+    if (settings.logLevel >= 2u) {
+        uCallback->initData.scaleDB = scaleFactorDB;
+        if (settings.logLevel >= 3u) {
+            uCallback->initData.Chol = &ws.Chol;
+            uCallback->initData.CholInv = &ws.CholInv;
+            uCallback->initData.M = &ws.M;
+            uCallback->initData.s = &ws.s;
+            uCallback->initData.c = &ws.c;
+            uCallback->initData.b = &ws.b;
+        }
+        uCallback -> ProcessData(1);
+    }
+}
 void Core::SetIterationData() {
-    uCallback->iterData.activeSet = &ws.activeConstraints;
-    uCallback->iterData.activeSetHistory = &ws.addHistory;
-    uCallback->iterData.primal = &ws.primal;
-    uCallback->iterData.dual = &ws.dual;
-    uCallback->iterData.violations = &ws.violations;
-    uCallback->iterData.zp = &ws.zp;
-    uCallback->iterData.iteration = dualIteration;
-    uCallback->iterData.newIndex = newActiveIndex;
-    uCallback->iterData.singular = singularIndex == newActiveIndex;
-    uCallback->iterData.gamma = gamma;
-    uCallback->iterData.dualTol = dualTolerance;
-    uCallback->iterData.rsNorm = rsNorm;
-    uCallback->ProcessData(2);
+    if (settings.logLevel >= 2u) {
+        uCallback->iterData.iteration = dualIteration;
+        uCallback->iterData.newIndex = newActiveIndex;
+        uCallback->iterData.gamma = gamma;
+        uCallback->iterData.dualTol = dualTolerance;
+        uCallback->iterData.rsNorm = rsNorm;
+        uCallback->iterData.singular = (singularIndex == newActiveIndex);
+        if (settings.logLevel >= 3u) {
+            uCallback->iterData.activeSet = &ws.activeConstraints;
+            uCallback->iterData.activeSetHistory = &ws.addHistory;
+            uCallback->iterData.primal = &ws.primal;
+            uCallback->iterData.dual = &ws.dual;
+            uCallback->iterData.violations = &ws.violations;
+            uCallback->iterData.zp = &ws.zp;
+        }
+        uCallback->ProcessData(2);
+    }
 }
 
 void Core::SetFinalData() {
-    uCallback->finalData.dualStatus = dualExitStatus;
-    uCallback->finalData.primalStatus = primalExitStatus;
-    uCallback->finalData.nIterations = output.nDualIterations;
-    uCallback->finalData.violations = output.violations;
-    if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
-        uCallback->finalData.cost = output.cost;
-        uCallback->finalData.x = output.x;
-        uCallback->finalData.lambda = output.lambda;
-        uCallback->finalData.lambdaLw = output.lambdaLw;
-        uCallback->finalData.lambdaUp = output.lambdaUp;
+    if (settings.logLevel >= 1u) {
+        uCallback->finalData.dualStatus = dualExitStatus;
+        uCallback->finalData.primalStatus = primalExitStatus;
+        uCallback->finalData.nIterations = output.nDualIterations;
+        uCallback->finalData.violations = &output.violations;
+        if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
+            uCallback->finalData.cost = output.cost;
+            uCallback->finalData.x = &output.x;
+            uCallback->finalData.lambda = &output.lambda;
+            uCallback->finalData.lambdaLw = &output.lambdaLw;
+            uCallback->finalData.lambdaUp = &output.lambdaUp;
+        }
+        uCallback->ProcessData(3);
     }
-    uCallback->ProcessData(3);
 }
-
+void Core::SetLinearSolver() {
+    if (settings.linSolverType == LinSolverType::CUMULATIVE_LDLT) {
+        lSolver = std::make_unique<CumulativeLDLTSolver>(ws.M, ws.s);
+    } else if (settings.linSolverType == LinSolverType::CUMULATIVE_EG_LDLT) {
+        lSolver = std::make_unique<CumulativeEGNSolver>(ws.M, ws.s);
+    }
+    else if (settings.linSolverType == LinSolverType::MSS1) {
+        lSolver = std::make_unique<MssCumulativeSolver>(ws.M, ws.s);
+    }
+}
 void Core::Solve() {
     dualExitStatus = DualLoopExitStatus::UNKNOWN;
     primalExitStatus = PrimalLoopExitStatus::DIDNT_STARTED;
@@ -578,7 +596,6 @@ void Core::Solve() {
         if (primalIteration >= settings.nPrimalIterations) {
             primalExitStatus = PrimalLoopExitStatus::ITERATIONS;
         }
-
         SetIterationData();
         ++dualIteration;
     }

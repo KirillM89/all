@@ -50,8 +50,16 @@ public:
             double s2 = s[i] * s[i];
             const double rat = norm2 / s2;
             if (thMin < rat && rat < thMax) {
-                // check if ratio is in valid bounds
-                scaleFactorSL = std::fmin(rat, scaleFactorSL);
+                // check if ratio is in bounds in which scaling can be done
+                // without possible numerical problems
+                // Remark:
+                // if rat is not small or big e.g. ~1, or e.g. ~1.0e-2
+                // may be case when final scale factor will be unsufficient, but the
+                // condition  thMin < rat && rat < thMax is satisfied not for all the constraints,
+                // so other unbalanced constraints will be bad scaled
+                const double ratRoot = sqrt(rat);
+                double scaleFactor = ratRoot;
+                scaleFactorSL = std::fmin(scaleFactor, scaleFactorSL);
             } else {
                 double bf = 1.0; // balance factor
                 if (rat <  thMin) {
@@ -62,7 +70,6 @@ public:
                 // s' = bf * s
                 if (bf < scaleFactorSU) { // ||M|| << ||s||
                     scaleFactorSU = std::fmax(minSf, bf);
-                    s[i] /= 10000.0;
                 }
             }
             //TODO: implement scaleFactor Up
