@@ -19,6 +19,11 @@ void Callback1::ProcessData(int stage) {
     }
     if (stage == 1) { // dump data after init stage
         logger->SetStage("INITIALIZATION");
+        if(logLevel >= 1u) {
+            logger->message("variables", initData.nVariables,
+                            "constraints", initData.nConstraints,
+                            "eq constraints", initData.nEqConstraints);
+        }
         if(logLevel >= 2u) {
             logger->message("t Chol", initData.tChol);
             logger->message("t Inv", initData.tInv);
@@ -67,6 +72,9 @@ void Callback1::ProcessData(int stage) {
            logger->dump("lambdaLw", *finalData.lambdaLw);
            logger->dump("lambdaUp", *finalData.lambdaUp);
            logger->dump("violations", *finalData.violations);
+        }
+        for (std::size_t i = 0; i < finalData.linSlvrTimes->size(); ++i) {
+            logger->message(i, "n", (*finalData.linSlvrTimes)[i].nConstraints, "t", (*finalData.linSlvrTimes)[i].us);
         }
     }
 }

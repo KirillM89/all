@@ -84,14 +84,14 @@ struct ActiveSetUpdateSettings {
 };
 
 struct CoreSettings {
-    //LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
+    LinSolverType linSolverType = LinSolverType::CUMULATIVE_LDLT;
     //LinSolverType linSolverType = LinSolverType::CUMULATIVE_EG_LDLT;
-    LinSolverType linSolverType = LinSolverType::MSS1;
+    //LinSolverType linSolverType = LinSolverType::MSS1;
     DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
     CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
     unsg_t nDualIterations = 1000;
     unsg_t nPrimalIterations = 100;
-    unsg_t logLevel = 0;
+    unsg_t logLevel = 1u;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
     double nnlsPrimalZero = -1.0e-7; //-1.0e-7; //zp < 0 => zp < nnlsPrimalZero
@@ -182,11 +182,18 @@ enum class PreprocStatus {
     INVALID_SETTINGS,
     INIT_FAILED
 };
+struct LinSolverTime {
+    ticks_t us;
+    unsg_t nConstraints;
+};
 
 struct SolverOutput {
     DualLoopExitStatus dualExitStatus;
     PrimalLoopExitStatus primalExitStatus;
     unsg_t nDualIterations;
+    unsg_t nVariables;
+    unsg_t nConstraints;
+    unsg_t nEqConstraints;
 	double maxViolation;
 	double dualityGap;
     double cost;

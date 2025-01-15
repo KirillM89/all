@@ -291,62 +291,6 @@ void TestMMTb(const matrix_t& M, const std::vector<double>& b) {
 		EXPECT_LT(std::fabs((b[i] - mmtx[i]) / b[i]), 1.0e-3) << "baseline=" << b[i] << " sol=" << mmtx[i] << " i=" << i;
 	}
 }
-/*
-void TestSolver(const QP_NNLS_TEST_DATA::QPProblem& problem, const UserSettings& settings, const QPBaseline& baseline) {
-	ProblemReader pr;
-	pr.Init(problem.H, problem.c, problem.A, problem.b);
-	DenseQPProblem qpNNLS = pr.getProblem();
-	ProblemSettings problemNNLS(settings, qpNNLS);
-	NNLSQPSolver solver;
-	bool isInit = solver.Init(problemNNLS);
-	ASSERT_TRUE(isInit);
-	const matrix_t chol = solver.getChol();
-	const matrix_t cholInv = solver.getCholInv();
-	const matrix_t H = solver.getH();
-	const int nVars = H.size();
-	ASSERT_EQ(chol.size(), nVars);
-	ASSERT_EQ(cholInv.size(), nVars);
-	matrix_t CCI(nVars, std::vector<double>(nVars));
-	matrix_t CTC = CCI;
-	Mult(chol, cholInv, CCI);
-	M1TM2(chol, chol, CTC);
-	const double tol = 1e-10;
-	for (int i = 0; i < nVars; ++i) {
-		for (int j = 0; j < nVars; ++j) {
-			EXPECT_NEAR(CCI[i][j], i == j ? 1.0 : 0.0, tol) << "i=" << i << " j=" << j;
-			EXPECT_NEAR(CTC[j][i], H[i][j], tol) << "i=" << i << " j=" << j;
-		}
-	}
-	solver.Solve();
-	if (baseline.dualStatus == DualLoopExitStatus::INFEASIBILITY) {
-		ASSERT_EQ(solver.getDualStatus(), baseline.dualStatus);
-		return;
-	} 
-	const std::vector<double>& solverX= solver.getXOpt();
-	ASSERT_EQ(solverX.size(), H.size());
-	const double solverCost = solver.getCost();
-	const int nX = H.size();
-	EXPECT_NEAR(baseline.cost, solverCost, 1.0e-4) << "bl: " << baseline.cost << " slvr: " << solverCost;
-	bool passed = false;
-	for (const auto & solInstance: baseline.xOpt) {
-		passed = true;
-		for (int i = 0; i < nX; ++i) {
-			if (std::fabs(solInstance[i] - solverX[i]) > 1.0e-4) {
-				passed = false;
-				break;
-			}
-		}
-	}
-	if (!passed) {
-		std::cout << std::endl << "bl/solver" << std::endl;
-		for (const auto& solInstance : baseline.xOpt) {
-			for (int i = 0; i < nX; ++i) {
-				std::cout << i << SEP << solInstance[i] << SEP << solverX[i] << std::endl;
-			}
-		}
-	}
-	EXPECT_TRUE(passed);
-}  */
 
 void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings,
                      const QPBaseline& baseline, const std::string& logPath) {
@@ -369,8 +313,6 @@ void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings
         EXPECT_LE(relativeVal(output.x[i], xBl[i]),tol);
     }
 }
-
-
 
 void LinearTransform::setQPProblem(const QP_NNLS_TEST_DATA::QPProblem& problem) {
 	A = problem.A;
@@ -786,7 +728,7 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
         if (initStatus == InitStageStatus::CHOLETSKY) {
             result.errMsg = "choletsky";
         } else if (initStatus == InitStageStatus::MATRIX_INVERSION) {
-            result.errMsg = "mat inversion";
+            result.errMsg = "chol inversion";
         }
     } else {
         solver.Solve();
@@ -802,8 +744,9 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
     return result;
 }
 void DenseQPTester::CheckOutput(const SolverOutput& output) {
-    result.nConstraints = output.lambda.size();
-    result.nVariables = output.x.size();
+    result.nVariables = output.nVariables;
+    result.nConstraints = output.nConstraints;
+    result.nEqConstraints = output.nEqConstraints;
     result.nIterations = output.nDualIterations;
     if (output.dualExitStatus == DualLoopExitStatus::INFEASIBILITY) {
         result.status = false;
@@ -920,6 +863,7 @@ void DenseQPTester::FillReport() {
         logger.Write("test name",
                      "n variables",
                      "n constraints",
+                     "n eq constraints",
                      "n iterations",
                      "status",
                      "max pr infsb cnstr",
@@ -938,6 +882,7 @@ void DenseQPTester::FillReport() {
     logger.Write(problemName,
                  result.nVariables,
                  result.nConstraints,
+                 result.nEqConstraints,
                  result.nIterations);
     if (!result.errMsg.empty()) {
         logger.Write(result.errMsg);

@@ -4,6 +4,7 @@
 #include <algorithm>
 namespace QP_NNLS {
 Core::Core():
+    problem(nullptr),
     timer(std::make_unique<wcTimer>()),
     uCallback(std::make_unique<Callback>())
 {
@@ -40,6 +41,7 @@ void Core::SetDefaultSettings() {
 }
 void Core::ResetProblem() {
     ws.Clear();
+    linSolverTimes.clear();
     nVariables = 0;
     nConstraints = 0;
     nEqConstraints = 0;
@@ -70,6 +72,7 @@ bool Core::InitProblem(const DenseQPProblem &problem) {
     }
     uCallback->SetLogLevel(settings.logLevel);
     uCallback->Init();
+    linSolverTimes.reserve(settings.nDualIterations);
     SetInitData();
     return true;
 }
@@ -109,24 +112,25 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     initStatus = InitStageStatus::SUCCESS;
     nVariables = static_cast<unsg_t>(problem.H.size());
     nConstraints = static_cast<unsg_t>(problem.A.size());
+    nEqConstraints = problem.nEqConstraints;
     for (unsg_t i = 0; i < nEqConstraints; ++i) {
         ws.linEqConstraints.insert(i);
     }
     ws.activeConstraints = ws.linEqConstraints;
-    nEqConstraints = problem.nEqConstraints;
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
     SetRptInterval();
     AllocateWs();
     timer->Start();
-    ComputeCholetsky(problem.H);
-    Mult(ws.Jac, ws.CholInv, ws.M);           // M = A * Q^-1   nConstraints x nVariables
-    TimeInterval(uCallback -> initData.tM);
+    ComputeCholetsky(ws.H);
+    timer->Ticks();
+    Mult(ws.Jac, ws.CholInv, ws.M);        // M = A * Q^-1   nConstraints x nVariables
     MultTransp(ws.CholInv, ws.c, ws.v);    // v = Q^-T * d nVariables
     Mult(ws.M, ws.v, ws.s);                // M * v nConstraints
-    VSum(ws.s, ws.b, ws.s);
-    ScaleProblem();
+    VSum(ws.s, ws.b, ws.s);                // s = b + M * v
+    ScaleProblem();                        // ortogonalization of constraints and scaling
+    TimeInterval(uCallback->initData.tM);
     SetLinearSolver();
     return true;
 }
@@ -217,7 +221,6 @@ void Core::RmvFromActiveSet(unsg_t indx) {
         lSolver->Delete(indx);
     }
 }
-
 bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare, bool skip) {
     bool res = false;
     const double dl = ws.dual[indx];
@@ -265,12 +268,12 @@ unsg_t Core::SelectNewActiveComponent() {
 }
 
 unsg_t Core::SolvePrimal() {
+    timer->Ticks();
     const std::size_t nActive = ws.activeConstraints.size();
     lSolver->SetGamma(gamma);
     const LinSolverOutput& output = lSolver -> Solve();
     std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
     if (!settings.actSetUpdtSettings.rejectSingular) {
-        //const auto& sol= linSolver.GetSolution();;
         ws.negativeZp.clear();
         std::size_t i = 0;
         if (nActive > 0) {
@@ -283,6 +286,9 @@ unsg_t Core::SolvePrimal() {
             }
         }
     }
+    linSolverTimes.emplace_back();
+    linSolverTimes.back().us = timer->Ticks();
+    linSolverTimes.back().nConstraints = nActive;
     // TODO: check quality
     return output.nDNegative;
 }
@@ -314,7 +320,6 @@ bool Core::MakeLineSearch() {
     }
     return stepFound || ws.negativeZp.empty();
 }
-
 int Core::UpdatePrimal() {
     int res = 0;
     if (SolvePrimal() > 0) {
@@ -333,13 +338,12 @@ int Core::UpdatePrimal() {
 }
 void Core::ScaleProblem() {
     ortScaler = std::make_unique<OrtScaler>(ws.M, ws.s);
-    ortScaler -> Scale();
-    const ScaleCoefs& sCoefs = ortScaler -> GetScaleCoefs();
+    ortScaler->Scale();
+    const ScaleCoefs& sCoefs = ortScaler->GetScaleCoefs();
     scaleFactorDB = sCoefs.scaleFactorS;
     settings.origPrimalFsb *= scaleFactorDB;
     ScaleD();
 }
-
 void Core::ScaleD() {
     const unsg_t n = std::max(nConstraints, nVariables);
     for (unsg_t i = 0; i < n; ++i) {
@@ -353,7 +357,6 @@ void Core::ScaleD() {
         }
     }
 }
-
 void Core::UnscaleD() {
     const double invScaleFactor = 1.0 / scaleFactorDB;
     for (std::size_t i = 0; i < nConstraints; ++i) {
@@ -460,6 +463,9 @@ void Core::ComputeOrigSolution() {
 void Core::FillOutput() {
     output.dualExitStatus = dualExitStatus;
     output.primalExitStatus = primalExitStatus;
+    output.nVariables = nVariables;
+    output.nConstraints = nConstraints;
+    output.nEqConstraints = nEqConstraints;
     if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY){
         output.x = ws.x;
         const std::size_t nc = nConstraints - 2 * nVariables;
@@ -480,15 +486,20 @@ void Core::FillOutput() {
     output.nDualIterations = dualIteration;
 }
 void Core::SetInitData() {
-    if (settings.logLevel >= 2u) {
-        uCallback->initData.scaleDB = scaleFactorDB;
-        if (settings.logLevel >= 3u) {
-            uCallback->initData.Chol = &ws.Chol;
-            uCallback->initData.CholInv = &ws.CholInv;
-            uCallback->initData.M = &ws.M;
-            uCallback->initData.s = &ws.s;
-            uCallback->initData.c = &ws.c;
-            uCallback->initData.b = &ws.b;
+    if (settings.logLevel >= 1u) {
+        uCallback->initData.nVariables= nVariables;
+        uCallback->initData.nConstraints = nConstraints;
+        uCallback->initData.nEqConstraints = nEqConstraints;
+        if (settings.logLevel >= 2u) {
+            uCallback->initData.scaleDB = scaleFactorDB;
+            if (settings.logLevel >= 3u) {
+                uCallback->initData.Chol = &ws.Chol;
+                uCallback->initData.CholInv = &ws.CholInv;
+                uCallback->initData.M = &ws.M;
+                uCallback->initData.s = &ws.s;
+                uCallback->initData.c = &ws.c;
+                uCallback->initData.b = &ws.b;
+            }
         }
         uCallback -> ProcessData(1);
     }
@@ -519,6 +530,7 @@ void Core::SetFinalData() {
         uCallback->finalData.primalStatus = primalExitStatus;
         uCallback->finalData.nIterations = output.nDualIterations;
         uCallback->finalData.violations = &output.violations;
+        uCallback->finalData.linSlvrTimes = &linSolverTimes;
         if (dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
             uCallback->finalData.cost = output.cost;
             uCallback->finalData.x = &output.x;

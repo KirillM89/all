@@ -1,6 +1,7 @@
 #ifndef NNLS_CORE_H
 #define NNLS_CORE_H
 #include <memory>
+#include <map>
 #include "types.h"
 #include "linSolvers.h"
 #include "scaler.h"
@@ -54,6 +55,7 @@ public:
     const SolverOutput& GetOutput() { return output; }
     InitStageStatus GetInitStatus() { return initStatus; }
 private:
+    DenseQPProblem* problem = nullptr;
     unsg_t nVariables;
     unsg_t nConstraints;
     unsg_t nEqConstraints;
@@ -80,6 +82,7 @@ private:
     std::unique_ptr<OrtScaler> ortScaler;
     SolverOutput output;
     InitStageStatus initStatus;
+    std::vector<LinSolverTime> linSolverTimes;
     bool PrepareNNLS(const DenseQPProblem& problem);
     bool ComputeCholetsky(const matrix_t& M);
     bool OrigInfeasible();

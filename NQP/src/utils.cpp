@@ -269,7 +269,7 @@ namespace QP_NNLS {
 	void M2M1T(const matrix_t& M1, const matrix_t& M2, matrix_t& MMT) {
 		const matrix_t& M1_1 = M2;
 		const matrix_t& M2_1 = M1;
-		M1M2T(M1_1, M2_1, MMT);
+        M1M2T(M1_1, M2_1, MMT);
 	}
     void  InvertByGauss(const matrix_t& M, matrix_t& Minv) {
 		matrix_t Mtmp = M;

@@ -28,8 +28,12 @@ namespace QP_NNLS {
         std::vector<double>* lambda;
         std::vector<double>* lambdaUp;
         std::vector<double>* lambdaLw;
+        std::vector<LinSolverTime>* linSlvrTimes;
     };
     struct InitializationData {
+        unsg_t nVariables;
+        unsg_t nConstraints;
+        unsg_t nEqConstraints;
         double scaleDB;
         std::string tChol;
         std::string tInv;

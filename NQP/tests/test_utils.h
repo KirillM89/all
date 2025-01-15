@@ -269,6 +269,7 @@ struct QPTestResult {
     double violatedC;
     double violatedB;
     unsigned int nConstraints;
+    unsigned int nEqConstraints;
     unsigned int nVariables;
     unsigned int nPrInfsbB;
     unsigned int nPrInfsbC;
@@ -287,6 +288,7 @@ struct QPTestResult {
         violatedC = 0.0;
         violatedB = 0.0;
         nConstraints = 0;
+        nEqConstraints = 0;
         nVariables = 0;
         nPrInfsbC = std::numeric_limits<unsigned int>::max();
         nPrInfsbB = std::numeric_limits<unsigned int>::max();
