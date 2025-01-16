@@ -711,41 +711,30 @@ namespace QP_NNLS {
         curIndex = 0;
         actSize = active.size();
         while(curIndex < actSize) {
-            ComputeL();
-            ComputeD();
+            d = norms2[curIndex];
+            for (std::size_t i = 0; i < curIndex; ++i) {
+                if (std::fabs(D[i]) < dTol) {
+                    L[curIndex][i] = 0.0;
+                } else {
+                    double dot = S[i] * S[curIndex];
+                    for (size_t j = 0; j < nX; ++j) {
+                        dot += M[i][j] * M[curIndex][j];
+                        if (j < i) {
+                            dot -= L[i][j] * D[j] * L[curIndex][j];
+                        }
+                    }
+                    L[curIndex][i] = dot / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
+                    d -= L[curIndex][i] * dot;
+                }
+            }
+            if (d <= 0.0) {
+                std::cout << "LDL warning: " << "d=" << d << "<0" << std::endl;
+                d = 0.0;
+            }
+            D[curIndex] = d;
+            L[curIndex][curIndex] = 1.0;
             ++curIndex;
         }
-    }
-    void LDLT::ComputeL() {
-        //L_i * D_i * l_i+1 = A1:i * A_i+1T
-        //b = A1:i * A_i+1T
-        for (std::size_t i = 0; i < curIndex; ++i) {
-            if (std::fabs(D[i]) < dTol) {
-                L[curIndex][i] = 0.0;
-            } else {
-                double dot = S[i] * S[curIndex];
-                for (size_t j = 0; j < nX; ++j) {
-                    dot += M[i][j] * M[curIndex][j];
-                }
-                double sum = 0.0;
-                for (std::size_t j = 0; j < i; ++j) {
-                    sum += L[i][j] * D[j] * L[curIndex][j];
-                }
-                L[curIndex][i] = (dot - sum) / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
-            }
-        }
-        L[curIndex][curIndex] = 1.0;
-    }
-    void LDLT::ComputeD() {
-        d = norms2[curIndex];
-        for (std::size_t i = 0; i < curIndex; ++i) {
-            d -= L[curIndex][i] * D[i] * L[curIndex][i];
-        }
-        if (d <= 0.0) {
-            std::cout << "LDL warning: " << "d=" << d << "<0" << std::endl;
-            d = 0.0;
-        }
-        D[curIndex] = d;
     }
 
     void LDL::Set(const matrix_t& A) {
