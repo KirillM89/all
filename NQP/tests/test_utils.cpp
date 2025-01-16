@@ -131,7 +131,7 @@ void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline)
 	}
 }
 void TestLDLT(const matrix_t& M, const std::vector<double>& S,
-              std::set<unsigned int>& active) {
+              const std::set<unsigned int>& active) {
     const std::size_t nR = M.size();
     const std::size_t nC = M.front().size();
     const std::size_t nActive = active.size();
@@ -162,7 +162,7 @@ void TestLDLT(const matrix_t& M, const std::vector<double>& S,
         for (unsigned int j = 0; j < nActive; ++j) {
             double sum = 0.0;
             for (std::size_t c = 0; c < nActive; ++c) {
-                sum += ld[i][c] * l[c][j];
+                sum += ld[i][c] * l[j][c];
             }
             EXPECT_NEAR(mmt[i][j], sum, 1.0e-7);
         }

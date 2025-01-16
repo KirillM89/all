@@ -449,6 +449,49 @@ TEST_P(TestCholetskyFullPivotingParametrized, Utils_Test1) {
 }
 INSTANTIATE_TEST_CASE_P(SUITE_1, TestCholetskyFullPivotingParametrized, ::testing::Values(PSDM::mat1, PSDM::mat2, PSDM::mat3, PSDM::mat4, PSDM::mat5, PSDM::mat6));
 
+TEST(Utils_LDLT, Test1) {
+    const matrix_t M = { {1.0}, {1.0} };
+    const std::vector<double> S = {1.0, 1.0};
+    const std::set<unsigned int> active = {0, 1};
+    TestLDLT(M, S, active);
+}
+TEST(Utils_LDLT, Test2) {
+    const matrix_t M = { {1.0}, {2.0} };
+    const std::vector<double> S = {3.0, 4.0};
+    const std::set<unsigned int> active = {0, 1};
+    TestLDLT(M, S, active);
+}
+TEST(Utils_LDLT, Test3) {
+    const matrix_t M = {{1.0}};
+    const std::vector<double> S = {3.0};
+    const std::set<unsigned int> active = {0};
+    TestLDLT(M, S, active);
+}
+TEST(Utils_LDLT, Test4) {
+    const matrix_t M = {{1.0, 2.0, 3.0}, {-10.5, 100.7, 23.5}};
+    const std::vector<double> S = {3.0, -400.987};
+    const std::set<unsigned int> active = {0, 1};
+    TestLDLT(M, S, active);
+}
+TEST(Utils_LDLT, Test5) {
+    const matrix_t M = {{1.0, 2.0, 3.0}, {-10.5, 100.7, 23.5}, {0.0, 0.0, 0.0}};
+    const std::vector<double> S = {3.0, -400.987, 1.0};
+    const std::set<unsigned int> active = {0, 1, 2};
+    TestLDLT(M, S, active);
+}
+TEST(Utils_LDLT, Test6) {
+    const matrix_t M = {{1.0, 2.0, 3.0}, {-10.0, -10.0, -10.0}, {0.0, 0.0, 0.0}};
+    const std::vector<double> S = {3.0, -10.0, 0.0};
+    const std::set<unsigned int> active = {0, 1, 2};
+    TestLDLT(M, S, active);
+}
+TEST(Utils_LDLT, Test7) {
+    const matrix_t M = {{1.0, 2.0, 3.0}, {-10.0, -10.0, -10.0}, {5.0, 5.0, 5.0}};
+    const std::vector<double> S = {3.0, -10.0, 5.0};
+    const std::set<unsigned int> active = {0, 1, 2};
+    TestLDLT(M, S, active);
+}
+
 TEST(Utils_LDLDecomposition, Test1) {
 	matrix_t M = { {5.0, 11.0}, {11.0, 25.0} };
 	matrix_t MPS = M;

@@ -101,11 +101,8 @@ namespace QP_NNLS {
         matrix_t L;
         std::vector<double> D;
         std::vector<double> norms2;
-        std::vector<double> b;
-        std::vector<double> l;
         void ComputeL();
         void ComputeD();
-        void SolveLdb(const std::vector<double>& b);
     };
 
     class LDL

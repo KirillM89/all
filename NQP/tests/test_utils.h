@@ -62,7 +62,7 @@ void TestLinearTransformation(const QP_NNLS_TEST_DATA::QPProblem& problem, const
 void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline);
 void TestLDL(const matrix_t& M);
 void TestLDLT(const matrix_t& M, const std::vector<double>& S,
-              std::set<unsigned int>& active);
+              const std::set<unsigned int>& active);
 void TestLDLRemove(matrix_t& M ,int i);
 void TestLDLAdd(matrix_t& M, const std::vector<double>& vc);
 void TestMMTb(const matrix_t& M, const std::vector<double>& b);
