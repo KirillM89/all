@@ -130,13 +130,50 @@ void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline)
 		}
 	}
 }
-
+void TestLDLT(const matrix_t& M, const std::vector<double>& S,
+              std::set<unsigned int>& active) {
+    const std::size_t nR = M.size();
+    const std::size_t nC = M.front().size();
+    const std::size_t nActive = active.size();
+    ASSERT_EQ(S.size(), nR);
+    ASSERT_LE(nActive, nR);
+    LDLT ldlt(M, S);
+    ldlt.Compute(active);
+    const matrix_t& l = ldlt.GetL();
+    const std::vector<double>& d = ldlt.GetD();
+    matrix_t mmt(nActive, std::vector<double>(nActive));
+    for (unsigned int iA : active) {
+        for (unsigned int jA : active) {
+            double sum = S[iA] * S[jA];
+            for (std::size_t c = 0; c < nC; ++c) {
+                sum += M[iA][c] * M[jA][c];
+            }
+            mmt[iA][jA] = sum;
+        }
+    }
+    matrix_t ld(nActive, std::vector<double>(nActive, 0.0));
+    for (unsigned int i = 0; i < nActive; ++i) {
+        for (unsigned int j = 0; j < nActive; ++j) {
+            ld[i][j] = l[i][j] * d[j];
+        }
+    }
+    matrix_t ldl(mmt);
+    for (unsigned int i = 0; i < nActive; ++i) {
+        for (unsigned int j = 0; j < nActive; ++j) {
+            double sum = 0.0;
+            for (std::size_t c = 0; c < nActive; ++c) {
+                sum += ld[i][c] * l[c][j];
+            }
+            EXPECT_NEAR(mmt[i][j], sum, 1.0e-7);
+        }
+    }
+}
 void TestLDL(const matrix_t& M) {
 	LDL ldl;
 	ldl.Set(M);
 	ldl.Compute();
 	const matrix_t& L = ldl.GetL();
-	const std::vector<double>& D = ldl.GetD();
+	const std::vector<double>& D = ldl.GetD();  
 	ASSERT_EQ(L.size(), M.size());
 	ASSERT_EQ(D.size(), M.size());
 	// D has no zero elements and L[i][i] = 1;

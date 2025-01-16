@@ -690,6 +690,83 @@ namespace QP_NNLS {
 		}
 	}
 
+    LDLT::LDLT(const matrix_t& M, const std::vector<double>& S):
+        d(0.0), maxSize(M.size()), nX(M.front().size()), curIndex(0), actSize(0),
+        M(M), S(S),
+        L(matrix_t(maxSize, std::vector<double>(maxSize))),
+        D(std::vector<double>(maxSize)),
+        norms2(std::vector<double>(maxSize)),
+        b(std::vector<double>(maxSize)),
+        l(std::vector<double>(maxSize))
+    {
+        for (std::size_t r = 0; r < maxSize; ++r) {
+            double sum = 0.0;
+            for (std::size_t c = 0; c < nX ; ++c) {
+                sum += M[r][c] * M[r][c];
+            }
+            norms2[r] = sum + S[r] * S[r];
+        }
+    }
+    void LDLT::Compute(const std::set<unsigned int>& active) {
+        L.front().front() = 1.0;
+        D.front() = norms2[0];
+        curIndex = 0;
+        actSize = active.size();
+        while(curIndex < actSize) {
+            ComputeL();
+            ComputeD();
+            ++curIndex;
+        }
+    }
+    void LDLT::ComputeL() {
+        //L_i * D_i * l_i+1 = A1:i * A_i+1T
+        //b = A1:i * A_i+1T
+        for (std::size_t i = 0; i < curIndex; ++i) {
+            if (std::fabs(D[i]) < dTol) {
+                L[curIndex][i] = 0.0;
+            } else {
+                double dot = 0.0;
+                for (size_t j = 0; j < nX; ++j) {
+                    dot += M[i][j] * M[curIndex][j];
+                }
+                dot += S[i] * S[i];
+                double sum = 0.0;
+                for (std::size_t j = 0; j < i; ++j) {
+                    sum += L[i][j] * D[j] * L[curIndex][j];
+                }
+                L[curIndex][i] = (dot - sum) / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
+            }
+        }
+        L[curIndex][curIndex] = 1.0;
+    }
+    void LDLT::ComputeD() {
+        d = norms2[curIndex];
+        for (std::size_t i = 0; i < curIndex; ++i) {
+            d -= l[i] * D[i] * l[i];
+        }
+        if (d <= 0.0) {
+            std::cout << "LDL warning: " << "d=" << d << "<0" << std::endl;
+            d = 0.0;
+        }
+        D[curIndex] = d;
+    }
+
+    void LDLT::SolveLdb(const std::vector<double>& b) {
+        for (std::size_t i = 0; i < curIndex; ++i) {
+            if (std::fabs(D[i]) < dTol) {
+                L[curIndex][i] = 0.0;
+            } else {
+                double sum = 0.0;
+                for (std::size_t j = 0; j < i; ++j) {
+                    sum += L[i][j] * D[j] * L[curIndex][j];
+                }
+                L[curIndex][i] = (b[i] - sum) / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
+            }
+        }
+        L[curIndex][curIndex] = 1.0;
+    }
+
+
     void LDL::Set(const matrix_t& A) {
         this->A = A;
         dimR = static_cast<int>(A.size());

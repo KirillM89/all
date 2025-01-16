@@ -3,6 +3,7 @@
 #define NNLS_QP_SOLVER_UTILS_H
 #include <cassert>
 #include <unordered_set>
+#include <unordered_map>
 #include <set>
 #include "types.h"
 namespace QP_NNLS {
@@ -78,6 +79,34 @@ namespace QP_NNLS {
 		const double diff = cand - val;
 		return ((diff >= -tol) && (diff <= tol));
 	}
+
+    class LDLT
+    {
+    public:
+        LDLT() = delete;
+        LDLT(const matrix_t& M, const std::vector<double>& S);
+        virtual ~LDLT() = default;
+        void Compute(const std::set<unsigned int>& activeColumns);
+        const matrix_t& GetL() { return L;}
+        const std::vector<double>& GetD() { return D;}
+    private:
+        const double dTol = 1.0e-16;
+        double d;
+        const std::size_t maxSize;
+        const std::size_t nX;
+        std::size_t curIndex;
+        std::size_t actSize;
+        const matrix_t& M;
+        const std::vector<double>& S;
+        matrix_t L;
+        std::vector<double> D;
+        std::vector<double> norms2;
+        std::vector<double> b;
+        std::vector<double> l;
+        void ComputeL();
+        void ComputeD();
+        void SolveLdb(const std::vector<double>& b);
+    };
 
     class LDL
     {
