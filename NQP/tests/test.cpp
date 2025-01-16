@@ -453,43 +453,98 @@ TEST(Utils_LDLT, Test1) {
     const matrix_t M = { {1.0}, {1.0} };
     const std::vector<double> S = {1.0, 1.0};
     const std::set<unsigned int> active = {0, 1};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
 }
 TEST(Utils_LDLT, Test2) {
     const matrix_t M = { {1.0}, {2.0} };
     const std::vector<double> S = {3.0, 4.0};
     const std::set<unsigned int> active = {0, 1};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
 }
 TEST(Utils_LDLT, Test3) {
     const matrix_t M = {{1.0}};
     const std::vector<double> S = {3.0};
     const std::set<unsigned int> active = {0};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
 }
 TEST(Utils_LDLT, Test4) {
     const matrix_t M = {{1.0, 2.0, 3.0}, {-10.5, 100.7, 23.5}};
     const std::vector<double> S = {3.0, -400.987};
     const std::set<unsigned int> active = {0, 1};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
 }
 TEST(Utils_LDLT, Test5) {
     const matrix_t M = {{1.0, 2.0, 3.0}, {-10.5, 100.7, 23.5}, {0.0, 0.0, 0.0}};
     const std::vector<double> S = {3.0, -400.987, 1.0};
     const std::set<unsigned int> active = {0, 1, 2};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
 }
 TEST(Utils_LDLT, Test6) {
     const matrix_t M = {{1.0, 2.0, 3.0}, {-10.0, -10.0, -10.0}, {0.0, 0.0, 0.0}};
     const std::vector<double> S = {3.0, -10.0, 0.0};
     const std::set<unsigned int> active = {0, 1, 2};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
 }
 TEST(Utils_LDLT, Test7) {
     const matrix_t M = {{1.0, 2.0, 3.0}, {-10.0, -10.0, -10.0}, {5.0, 5.0, 5.0}};
     const std::vector<double> S = {3.0, -10.0, 5.0};
     const std::set<unsigned int> active = {0, 1, 2};
-    TestLDLT(M, S, active);
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
+}
+TEST(Utils_LDLT, Test8) {
+    const matrix_t M = {{1.0, 2.0, 3.0}, {-10.0, -10.0, -10.0}, {5.0, 5.0, 5.0}};
+    const std::vector<double> S = {3.0, -10.0, 5.0};
+    const std::set<unsigned int> active = {0, 2};
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
+}
+TEST(Utils_LDLT, Test9) {
+    const matrix_t M = {{1.0, 2.0, 3.0},
+                        {-10.0, -10.0, -10.0},
+                        {5.0, 5.0, 5.0},
+                        {0.002, 10.33, -25.9},
+                        {-6.0, 10.0, -500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 5.0, 0.0, -9.0};
+    const std::set<unsigned int> active = {0, 2, 4};
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
+}
+TEST(Utils_LDLT, Test10) {
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-10.0, -10.0, 10.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-6.0, 10.0, 1500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    const std::set<unsigned int> active = {0, 4};
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
+}
+TEST(Utils_LDLT, Test11) {
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-10.0, -10.0, 10.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-6.0, 10.0, 1500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    std::set<unsigned int> active = {3};
+    LDLT ldlt(M, S);
+    TestLDLT(ldlt, M, S, active);
+    active = {1, 4};
+    TestLDLT(ldlt, M, S, active);
+    active = {0, 2};
+    TestLDLT(ldlt, M, S, active);
+    active = {2, 3};
+    TestLDLT(ldlt, M, S, active);
+    active = {0};
+    TestLDLT(ldlt, M, S, active);
 }
 
 TEST(Utils_LDLDecomposition, Test1) {

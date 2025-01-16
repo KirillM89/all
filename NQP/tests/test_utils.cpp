@@ -130,7 +130,8 @@ void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline)
 		}
 	}
 }
-void TestLDLT(const matrix_t& M, const std::vector<double>& S,
+void TestLDLT(LDLT& solver, const matrix_t& M,
+              const std::vector<double>&S,
               const std::set<unsigned int>& active) {
     const std::size_t nR = M.size();
     const std::size_t nC = M.front().size();
@@ -142,14 +143,17 @@ void TestLDLT(const matrix_t& M, const std::vector<double>& S,
     const matrix_t& l = ldlt.GetL();
     const std::vector<double>& d = ldlt.GetD();
     matrix_t mmt(nActive, std::vector<double>(nActive));
+    std::size_t i = 0;
     for (unsigned int iA : active) {
+        std::size_t j = 0;
         for (unsigned int jA : active) {
             double sum = S[iA] * S[jA];
             for (std::size_t c = 0; c < nC; ++c) {
                 sum += M[iA][c] * M[jA][c];
             }
-            mmt[iA][jA] = sum;
+            mmt[i][j++] = sum;
         }
+        ++i;
     }
     matrix_t ld(nActive, std::vector<double>(nActive, 0.0));
     for (unsigned int i = 0; i < nActive; ++i) {
@@ -168,6 +172,7 @@ void TestLDLT(const matrix_t& M, const std::vector<double>& S,
         }
     }
 }
+
 void TestLDL(const matrix_t& M) {
 	LDL ldl;
 	ldl.Set(M);

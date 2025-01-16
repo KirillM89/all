@@ -31,10 +31,11 @@ bool CumulativeSolver::Delete(unsg_t indx) {
 }
 CumulativeLDLTSolver::CumulativeLDLTSolver(const matrix_t& M,
                                            const std::vector<double>& s):
-    CumulativeSolver(M, s)
+    CumulativeSolver(M, s), solver(M, s)
 {}
 
 const LinSolverOutput& CumulativeLDLTSolver::Solve() {
+    /*
     matrix_t m;
     std::vector<double> b;
     std::vector<double> vAdd;
@@ -48,11 +49,18 @@ const LinSolverOutput& CumulativeLDLTSolver::Solve() {
             output.indices.push_back(i);
         }
     }
-    if (m.size() > 0) {
-        MMTbSolver mmtb;
-        int nDNegative = mmtb.Solve(m, b);
-        output.nDNegative = nDNegative;
-        output.solution = mmtb.GetSolution();
+    */
+    std::set<unsigned int> active;
+    output.indices.clear();
+    for (unsg_t i = 0; i < nConstraints; ++i) {
+        if (activeSet[i]) {
+            active.insert(i);
+            output.indices.push_back(i);
+        }
+    }
+    if (!active.empty()) {
+        output.nDNegative = solver.Solve(active, -gamma);
+        output.solution = solver.GetSolution();
     } else {
         output.solution = std::vector<double>(nConstraints, 0.0);
     }

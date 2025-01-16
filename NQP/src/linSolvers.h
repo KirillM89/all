@@ -1,6 +1,7 @@
 #ifndef LINSOLVERS_H
 #define LINSOLVERS_H
 #include "types.h"
+#include "utils.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 namespace QP_NNLS {
@@ -49,6 +50,8 @@ public:
     CumulativeLDLTSolver(const matrix_t& M, const std::vector<double>& s);
     virtual ~CumulativeLDLTSolver() override = default;
     const LinSolverOutput& Solve() override;
+protected:
+    MmtLinSolver solver;
 };
 
 class CumulativeEGNSolver : public CumulativeSolver {

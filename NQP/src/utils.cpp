@@ -705,36 +705,44 @@ namespace QP_NNLS {
             norms2[r] = sum + S[r] * S[r];
         }
     }
-    void LDLT::Compute(const std::set<unsigned int>& active) {
+
+    unsigned int LDLT::Compute(const std::set<unsigned int>& active) {
         L.front().front() = 1.0;
         D.front() = norms2[0];
         curIndex = 0;
-        actSize = active.size();
-        while(curIndex < actSize) {
-            d = norms2[curIndex];
-            for (std::size_t i = 0; i < curIndex; ++i) {
+        unsigned int nDZero = 0;
+        for (auto iAct : active) {
+            d = norms2[iAct];
+            std::size_t i = 0;
+            for (auto jAct : active) {
+                if (i >= curIndex){
+                    break;
+                }
                 if (std::fabs(D[i]) < dTol) {
                     L[curIndex][i] = 0.0;
                 } else {
-                    double dot = S[i] * S[curIndex];
+                    double dot = S[jAct] * S[iAct];
                     for (size_t j = 0; j < nX; ++j) {
-                        dot += M[i][j] * M[curIndex][j];
+                        dot += M[jAct][j] * M[iAct][j];
                         if (j < i) {
                             dot -= L[i][j] * D[j] * L[curIndex][j];
                         }
                     }
-                    L[curIndex][i] = dot / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
+                    L[curIndex][i] = dot / D[i];
                     d -= L[curIndex][i] * dot;
                 }
+                ++i;
             }
             if (d <= 0.0) {
                 std::cout << "LDL warning: " << "d=" << d << "<0" << std::endl;
                 d = 0.0;
+                ++nDZero;
             }
             D[curIndex] = d;
             L[curIndex][curIndex] = 1.0;
             ++curIndex;
         }
+        return nDZero;
     }
 
     void LDL::Set(const matrix_t& A) {
@@ -910,6 +918,43 @@ namespace QP_NNLS {
             }
         }
     }
+    MmtLinSolver::MmtLinSolver(const matrix_t& M, const std::vector<double>& S):
+        nDZero(0), maxSize(S.size()), curSize(0), gamma(1.0), ldlt(M,S), S(S),
+        forward(std::vector<double>(maxSize)),
+        backward(std::vector<double>(maxSize))
+    {}
+    unsigned int MmtLinSolver::Solve(const std::set<unsigned int>& active, double gamma) {
+        nDZero = ldlt.Compute(active);
+        curSize = active.size();
+        this->gamma = gamma;
+        Forward(active);
+        Backward();
+        return nDZero;
+    }
+    void MmtLinSolver::Forward(const std::set<unsigned int>& active) {
+        const matrix_t& L = ldlt.GetL();
+        std::size_t i = 0;
+        for (auto iAct : active) {
+            double sum = 0.0;
+            for (std::size_t j = 0; j < i; ++j) {
+                sum += L[i][j] * forward[j];
+            }
+            forward[i] = gamma * S[iAct] - sum;
+            ++i;
+        }
+    }
+    void MmtLinSolver::Backward() {
+        const matrix_t& L = ldlt.GetL();
+        const std::vector<double>& D = ldlt.GetD();
+        for (int i = curSize - 1; i >= 0; --i) {
+            double sum = 0.0;
+            for (int j = i + 1; j < curSize; ++j) {
+                sum += L[j][i] * D[i] * backward[j];
+            }
+            backward[i] = (std::fabs(D[i]) < zeroTol) ? 0.0 : (forward[i] - sum) / D[i];
+        }
+    }
+
     int MMTbSolver::Solve(const matrix_t& M, const std::vector<double>& b) {
         //solve MMTx=b
         assert(M.size() == b.size());

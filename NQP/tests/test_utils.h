@@ -13,6 +13,7 @@
 #include "configuration.h"
 #include "decorators.h"
 #include "data_writer.h"
+#include "utils.h"
 
 
 static std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -61,7 +62,8 @@ void TestLinearTransformation(const QP_NNLS_TEST_DATA::QPProblem& problem, const
 							  const QP_NNLS_TEST_DATA::QPProblem& bl);
 void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline);
 void TestLDL(const matrix_t& M);
-void TestLDLT(const matrix_t& M, const std::vector<double>& S,
+void TestLDLT(LDLT& solver, const matrix_t& M,
+              const std::vector<double>&S,
               const std::set<unsigned int>& active);
 void TestLDLRemove(matrix_t& M ,int i);
 void TestLDLAdd(matrix_t& M, const std::vector<double>& vc);

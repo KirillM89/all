@@ -86,7 +86,7 @@ namespace QP_NNLS {
         LDLT() = delete;
         LDLT(const matrix_t& M, const std::vector<double>& S);
         virtual ~LDLT() = default;
-        void Compute(const std::set<unsigned int>& activeColumns);
+        unsigned int Compute(const std::set<unsigned int>& activeColumns);
         const matrix_t& GetL() { return L;}
         const std::vector<double>& GetD() { return D;}
     private:
@@ -132,6 +132,27 @@ namespace QP_NNLS {
         double getARowNormSquared(int row) const;
         void update_L_remove(int iRow, const matrix_t& Ltil);
         std::vector<int> activeRows;
+    };
+
+    class MmtLinSolver {
+    public:
+        MmtLinSolver() = delete;
+        MmtLinSolver(const matrix_t& M, const std::vector<double>& S);
+        virtual ~MmtLinSolver() = default;
+        unsigned int Solve(const std::set<unsigned int>& active, double gamma);
+        const std::vector<double>& GetSolution() { return backward;}
+    protected:
+        const double zeroTol = 1.0e-16;
+        unsigned int nDZero;
+        const std::size_t maxSize;
+        std::size_t curSize;
+        double gamma;
+        LDLT ldlt;
+        const std::vector<double>& S;
+        std::vector<double> forward;
+        std::vector<double> backward;
+        void Forward(const std::set<unsigned int>& active);
+        void Backward();
     };
 
     class MMTbSolver
