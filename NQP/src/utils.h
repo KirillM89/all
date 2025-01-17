@@ -94,6 +94,7 @@ namespace QP_NNLS {
         const std::vector<double>& GetD() { return D;}
     private:
         const double dTol = 1.0e-16;
+        const double inf = 1.0e30;
         double d;
         const std::size_t maxSize;
         const std::size_t nX;
@@ -106,6 +107,7 @@ namespace QP_NNLS {
         std::vector<double> D;
         std::vector<double> norms2;
         std::list<unsigned int> rows;
+        matrix_t cache;
     };
 
     class LDL

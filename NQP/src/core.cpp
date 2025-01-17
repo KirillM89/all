@@ -247,15 +247,6 @@ unsg_t Core::SelectNewActiveComponent() {
                 newFound = true;
             }
         }
-        /*if (!newFound) {
-            //first check active components. TODO : May dual be negative ???
-            for (auto i : ws.activeConstraints) {
-                if (IsCandidateForNewActive(i, newActive)) {
-                    newActive = ws.dual[i];
-                    newFound = true;
-                }
-            }
-        }*/
     } else {
         for (unsg_t i = 0; i < nConstraints; ++i) {
             if (IsCandidateForNewActive(i, newActive, false)) {

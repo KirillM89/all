@@ -695,7 +695,8 @@ namespace QP_NNLS {
         M(M), S(S),
         L(matrix_t(maxSize, std::vector<double>(maxSize))),
         D(std::vector<double>(maxSize)),
-        norms2(std::vector<double>(maxSize))
+        norms2(std::vector<double>(maxSize)),
+        cache(matrix_t(maxSize, std::vector<double>(maxSize, inf)))
     {
         for (std::size_t r = 0; r < maxSize; ++r) {
             double sum = 0.0;
@@ -716,6 +717,7 @@ namespace QP_NNLS {
     void LDLT::Add(std::size_t rowNumber, bool delMode) {
         // add row with index rowNumber to last position and recompute L and D
         d = norms2[rowNumber];
+        // check if row is already added. Note: in deleteMode it's OK
         bool exists = false;
         for (std::list<unsigned int>::iterator it = rows.begin(); it != rows.end(); ++it){
             if (*it == rowNumber) {
@@ -737,15 +739,22 @@ namespace QP_NNLS {
             if (std::fabs(D[i]) < dTol) {
                 L[actSize][i] = 0.0;
             } else {
-                double dot = S[r] * S[rowNumber];
-                for (size_t j = 0; j < nX; ++j) {
-                    dot += M[r][j] * M[rowNumber][j];
-                    if (j < i) {
-                        dot -= L[i][j] * D[j] * L[actSize][j];
+                double dot = 0.0;
+                const double cv = cache[rowNumber][r];
+                if (isSame(cv, inf)) {
+                    dot = S[r] * S[rowNumber];
+                    for (size_t j = 0; j < nX; ++j) {
+                        dot += M[r][j] * M[rowNumber][j];
                     }
+                    cache[rowNumber][r] = dot;
+                } else {
+                    dot = cv;
+                }
+                for (size_t j = 0; j < i; ++j) {
+                    dot -= L[i][j] * D[j] * L[actSize][j];
                 }
                 L[actSize][i] = dot / D[i];
-                d -=  L[actSize][i] * dot;
+                d -= L[actSize][i] * dot;
             }
             ++i;
         }
