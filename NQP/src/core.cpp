@@ -213,7 +213,7 @@ bool Core::SkipCandidate(unsg_t indx) {
 void Core::AddToActiveSet(unsg_t indx) {
     ws.activeConstraints.insert(indx);
     ws.addHistory.push_back(indx);
-    lSolver->Add(ws.M[indx], ws.s[indx], indx);
+    lSolver->Add(indx);
 }
 void Core::RmvFromActiveSet(unsg_t indx) {
     if (ws.linEqConstraints.find(indx) == ws.linEqConstraints.end()) {
@@ -247,7 +247,7 @@ unsg_t Core::SelectNewActiveComponent() {
                 newFound = true;
             }
         }
-        if (!newFound) {
+        /*if (!newFound) {
             //first check active components. TODO : May dual be negative ???
             for (auto i : ws.activeConstraints) {
                 if (IsCandidateForNewActive(i, newActive)) {
@@ -255,7 +255,7 @@ unsg_t Core::SelectNewActiveComponent() {
                     newFound = true;
                 }
             }
-        }
+        }*/
     } else {
         for (unsg_t i = 0; i < nConstraints; ++i) {
             if (IsCandidateForNewActive(i, newActive, false)) {

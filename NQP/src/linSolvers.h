@@ -13,9 +13,10 @@ class ILinSolver {
     // Solve() calls in place where the problem has to be solved
 public:
     virtual ~ILinSolver() = default;
-    virtual bool Add(const std::vector<double>& mp, double sp, unsg_t indx) = 0;
+    virtual bool Add(unsg_t indx) = 0;
     virtual bool Delete(unsg_t indx) = 0;
     virtual void SetGamma(double gamma) = 0;
+    virtual void Reset() {};
     virtual const LinSolverOutput& Solve() = 0;
 protected:
     ILinSolver() = default;
@@ -28,7 +29,7 @@ public:
     CumulativeSolver() = delete;
     CumulativeSolver(const matrix_t& M, const std::vector<double>& s);
     virtual ~CumulativeSolver() override = default;
-    virtual bool Add(const std::vector<double>& mp, double sp, unsg_t indx) override;
+    virtual bool Add(unsg_t indx) override;
     virtual bool Delete(unsg_t indx) override;
     virtual void SetGamma(double gamma) override {this->gamma = gamma;}
 protected:
@@ -43,15 +44,26 @@ protected:
 
 };
 
-class CumulativeLDLTSolver: public CumulativeSolver {
+class CumulativeLDLTSolver: public ILinSolver {
     // Solve linear system using custom LDLT decomposition
 public:
     CumulativeLDLTSolver() = delete;
     CumulativeLDLTSolver(const matrix_t& M, const std::vector<double>& s);
     virtual ~CumulativeLDLTSolver() override = default;
     const LinSolverOutput& Solve() override;
+    virtual bool Add(unsg_t indx) override;
+    virtual bool Delete(unsg_t indx) override;
+    virtual void SetGamma(double gamma) override {this->gamma = -gamma;}
 protected:
-    MmtLinSolver solver;
+    const double zeroTol = 1.0e-16;
+    double gamma;
+    LDLT ldlt;
+    unsigned int ndzero;
+    const std::size_t maxSize;
+    const std::vector<double>& S;
+    std::vector<double> forward;
+    std::vector<double> backward;
+    LinSolverOutput output;
 };
 
 class CumulativeEGNSolver : public CumulativeSolver {

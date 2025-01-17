@@ -713,14 +713,17 @@ namespace QP_NNLS {
         return ndzero;
     }
 
-    void LDLT::Add(std::size_t rowNumber) {
+    void LDLT::Add(std::size_t rowNumber, bool delMode) {
         // add row with index rowNumber to last position and recompute L and D
         d = norms2[rowNumber];
         bool exists = false;
         for (std::list<unsigned int>::iterator it = rows.begin(); it != rows.end(); ++it){
             if (*it == rowNumber) {
                 exists = true;
-                std::cout << "LDLT Add() info: row " << rowNumber << " is already added" << std::endl;
+                if (!delMode) {
+                    std::cout << "LDLT Add() info: row " << rowNumber << " is already added" << std::endl;
+                }
+                break;
             }
         }
         if (!exists) {
@@ -764,10 +767,11 @@ namespace QP_NNLS {
                 if((it = rows.erase(it)) == rows.end()) {
                     return;
                 }
+                std::cout << "LDLT: deleted " << rowNumber << std::endl;
                 deleted = true;
             }
             if (deleted) {
-                Add(*it);
+                Add(*it, true);
             } else {
                 ++actSize;
             }

@@ -87,7 +87,7 @@ namespace QP_NNLS {
         LDLT(const matrix_t& M, const std::vector<double>& S);
         virtual ~LDLT() = default;
         unsigned int Compute(const std::set<unsigned int>& activeColumns);
-        void Add(std::size_t row);
+        void Add(std::size_t row, bool delMode = false);
         void Delete(std::size_t row);
         const std::list<unsigned int>& GetRows() { return rows;}
         const matrix_t& GetL() { return L;}
