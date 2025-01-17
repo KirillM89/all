@@ -87,6 +87,8 @@ namespace QP_NNLS {
         LDLT(const matrix_t& M, const std::vector<double>& S);
         virtual ~LDLT() = default;
         unsigned int Compute(const std::set<unsigned int>& activeColumns);
+        void Add(std::size_t row);
+        void Delete(std::size_t row);
         const matrix_t& GetL() { return L;}
         const std::vector<double>& GetD() { return D;}
     private:
@@ -94,6 +96,7 @@ namespace QP_NNLS {
         double d;
         const std::size_t maxSize;
         const std::size_t nX;
+        unsigned int ndzero = 0;
         std::size_t curIndex;
         std::size_t actSize;
         const matrix_t& M;
@@ -101,6 +104,7 @@ namespace QP_NNLS {
         matrix_t L;
         std::vector<double> D;
         std::vector<double> norms2;
+        std::list<unsigned int> rows;
     };
 
     class LDL

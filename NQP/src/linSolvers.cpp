@@ -35,21 +35,6 @@ CumulativeLDLTSolver::CumulativeLDLTSolver(const matrix_t& M,
 {}
 
 const LinSolverOutput& CumulativeLDLTSolver::Solve() {
-    /*
-    matrix_t m;
-    std::vector<double> b;
-    std::vector<double> vAdd;
-    output.indices.clear();
-    for (unsg_t i = 0; i < nConstraints; ++i) {
-        if (activeSet[i]) {
-            vAdd = M[i];
-            vAdd.push_back(s[i]);
-            m.push_back(vAdd);
-            b.push_back(-gamma * s[i]);
-            output.indices.push_back(i);
-        }
-    }
-    */
     std::set<unsigned int> active;
     output.indices.clear();
     for (unsg_t i = 0; i < nConstraints; ++i) {

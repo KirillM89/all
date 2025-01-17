@@ -707,42 +707,53 @@ namespace QP_NNLS {
     }
 
     unsigned int LDLT::Compute(const std::set<unsigned int>& active) {
-        L.front().front() = 1.0;
-        D.front() = norms2[0];
-        curIndex = 0;
-        unsigned int nDZero = 0;
         for (auto iAct : active) {
-            d = norms2[iAct];
-            std::size_t i = 0;
-            for (auto jAct : active) {
-                if (i >= curIndex){
-                    break;
-                }
-                if (std::fabs(D[i]) < dTol) {
-                    L[curIndex][i] = 0.0;
-                } else {
-                    double dot = S[jAct] * S[iAct];
-                    for (size_t j = 0; j < nX; ++j) {
-                        dot += M[jAct][j] * M[iAct][j];
-                        if (j < i) {
-                            dot -= L[i][j] * D[j] * L[curIndex][j];
-                        }
-                    }
-                    L[curIndex][i] = dot / D[i];
-                    d -= L[curIndex][i] * dot;
-                }
-                ++i;
-            }
-            if (d <= 0.0) {
-                std::cout << "LDL warning: " << "d=" << d << "<0" << std::endl;
-                d = 0.0;
-                ++nDZero;
-            }
-            D[curIndex] = d;
-            L[curIndex][curIndex] = 1.0;
-            ++curIndex;
+            Add(iAct);
         }
-        return nDZero;
+        return ndzero;
+    }
+
+    void LDLT::Add(std::size_t rowNumber) {
+        // add row with index rowNumber to last position and recompute L and D
+        d = norms2[rowNumber];
+        rows.push_back(rowNumber);
+        std::size_t i = 0;
+        for (auto r : rows) {
+            if (i >= actSize){
+                break;
+            }
+            if (std::fabs(D[i]) < dTol) {
+                L[actSize][i] = 0.0;
+            } else {
+                double dot = S[r] * S[rowNumber];
+                for (size_t j = 0; j < nX; ++j) {
+                    dot += M[r][j] * M[rowNumber][j];
+                    if (j < i) {
+                        dot -= L[i][j] * D[j] * L[actSize][j];
+                    }
+                }
+                L[actSize][i] = dot / D[i];
+                d -=  L[actSize][i] * dot;
+            }
+            ++i;
+        }
+        if (d <= 0.0) {
+            std::cout << "LDL warning: " << "d=" << d << " <= 0.0" << std::endl;
+            d = 0.0;
+            ++ndzero;
+        }
+        D[actSize] = d;
+        L[actSize][actSize] = 1.0;
+        ++actSize;
+    }
+
+    void LDLT::Delete(std::size_t rowNumber) {
+        for (std::list<unsigned int>::iterator it = rows.begin(); it !=  rows.end(); ++it){
+            if (*it == rowNumber) {
+                rows.erase(it);
+                break;
+            }
+        }
     }
 
     void LDL::Set(const matrix_t& A) {
@@ -777,9 +788,9 @@ namespace QP_NNLS {
             return;
         }
         std::vector<double>b(mSize, 0.0); // b=A*rowT
-        Mult(A, row, b);
+        Mult(A, row, b);  // m*n2
         std::vector<double> l = b;
-        solveLDb(b, l);
+        solveLDb(b, l); // m2
         double dd = DotProduct(row, row);
         for (int i = 0; i < mSize; ++i) {
             dd -= l[i] * D[i] * l[i];
