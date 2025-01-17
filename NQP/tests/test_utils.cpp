@@ -130,6 +130,7 @@ void TestM1M2T(const matrix_t& m1, const matrix_t& m2, const matrix_t& baseline)
 		}
 	}
 }
+
 void TestLDLT(LDLT& solver, const matrix_t& M,
               const std::vector<double>&S,
               const std::set<unsigned int>& active) {
@@ -138,10 +139,9 @@ void TestLDLT(LDLT& solver, const matrix_t& M,
     const std::size_t nActive = active.size();
     ASSERT_EQ(S.size(), nR);
     ASSERT_LE(nActive, nR);
-    LDLT ldlt(M, S);
-    ldlt.Compute(active);
-    const matrix_t& l = ldlt.GetL();
-    const std::vector<double>& d = ldlt.GetD();
+    solver.Compute(active);
+    const matrix_t& l = solver.GetL();
+    const std::vector<double>& d = solver.GetD();
     matrix_t mmt(nActive, std::vector<double>(nActive));
     std::size_t i = 0;
     for (unsigned int iA : active) {
@@ -414,6 +414,63 @@ const std::vector<double>& LinearTransform::getInitCoordinates(const std::vector
 	std::vector<double> oldCoordinates(Ht.size());
 	Mult(trMat, newCoordinates,oldCoordinates);
 	return oldCoordinates;
+}
+
+void LdltTester::Set(const matrix_t& M, const std::vector<double>& S) {
+    this->M = M;
+    this->S = S;
+    nR = M.size();
+    nC = M.front().size();
+    solver = std::make_unique<LDLT>(M, S);
+}
+void LdltTester::Add(unsigned int index) {
+    rows.insert(index);
+    ASSERT_LT(index, nR);
+    solver->Add(index);
+    Check();
+}
+void LdltTester::Delete(unsigned int index) {
+    rows.erase(index);
+    ASSERT_LT(index, nR);
+    solver->Delete(index);
+    Check();
+}
+void LdltTester::Check() {
+    const auto& rows = solver->GetRows();
+    const std::size_t nr = rows.size();
+    ASSERT_EQ(nr, this->rows.size());
+    matrix_t mmt(nr, std::vector<double>(nr));
+    std::size_t i = 0;
+    for (unsigned int iR : rows) {
+        std::size_t j = 0;
+        for (unsigned int jR : rows) {
+            double sum = S[iR] * S[jR];
+            for (std::size_t c = 0; c < nC; ++c) {
+                sum += M[iR][c] * M[jR][c];
+            }
+            mmt[i][j++] = sum;
+        }
+        ++i;
+    }
+    const matrix_t& l = solver->GetL();
+    const std::vector<double>& d = solver->GetD();
+    matrix_t ld(nr, std::vector<double>(nr, 0.0));
+    for (unsigned int i = 0; i < nr; ++i) {
+        for (unsigned int j = 0; j < nr; ++j) {
+            ld[i][j] = l[i][j] * d[j];
+        }
+    }
+    matrix_t ldl(mmt);
+    for (unsigned int i = 0; i < nr; ++i) {
+        for (unsigned int j = 0; j < nr; ++j) {
+            double sum = 0.0;
+            for (std::size_t c = 0; c < nr; ++c) {
+                sum += ld[i][c] * l[j][c];
+            }
+            EXPECT_NEAR(mmt[i][j], sum, 1.0e-7);
+        }
+    }
+
 }
 
 void TestCholetskyBase::TestCholetsky(const matrix_t& m) {

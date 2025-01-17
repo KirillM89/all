@@ -546,6 +546,49 @@ TEST(Utils_LDLT, Test11) {
     active = {0};
     TestLDLT(ldlt, M, S, active);
 }
+TEST(Utils_LDLT, Add) {
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-10.0, -10.0, 10.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-6.0, 10.0, 1500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    LdltTester tester;
+    tester.Set(M, S);
+    tester.Add(1);
+    tester.Add(3);
+    tester.Add(2);
+    tester.Add(0);
+    tester.Add(4);
+}
+TEST(Utils_LDLT, Del) {
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-10.0, -10.0, 10.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-6.0, 10.0, 1500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    LdltTester tester;
+    tester.Set(M, S);
+    //case 1
+    tester.Add(1);
+    tester.Delete(1);
+    //case 2
+    tester.Add(2);
+    tester.Add(0);
+    tester.Delete(0);
+    tester.Delete(2);
+    //case 3          // matrix size:
+    tester.Add(1);    // 1
+    tester.Add(4);    // 2
+    tester.Delete(1); // 1
+    tester.Add(1);    // 2
+    tester.Delete(4); // 1
+    tester.Add(3);    // 2
+    tester.Add(0);    // 3
+    tester.Delete(3); // 2
+    tester.Add(2);    // 3
+}
 
 TEST(Utils_LDLDecomposition, Test1) {
 	matrix_t M = { {5.0, 11.0}, {11.0, 25.0} };

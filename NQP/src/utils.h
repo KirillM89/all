@@ -89,6 +89,7 @@ namespace QP_NNLS {
         unsigned int Compute(const std::set<unsigned int>& activeColumns);
         void Add(std::size_t row);
         void Delete(std::size_t row);
+        const std::list<unsigned int>& GetRows() { return rows;}
         const matrix_t& GetL() { return L;}
         const std::vector<double>& GetD() { return D;}
     private:

@@ -72,6 +72,24 @@ void TestMMTb(const matrix_t& M, const std::vector<double>& b);
 void TestSolverDense(const QP_NNLS_TEST_DATA::QPProblem& problem, const Settings& settings, const QPBaseline& baseline,
                      const std::string& logFile);
 double relativeVal(double a, double b);
+
+class LdltTester {
+public:
+    LdltTester() = default;
+    ~LdltTester() = default;
+    void Set(const matrix_t& M, const std::vector<double>& S);
+    void Add(unsigned int index);
+    void Delete(unsigned int index);
+private:
+    matrix_t M;
+    std::vector<double> S;
+    std::unique_ptr<LDLT> solver;
+    std::unordered_set<unsigned int> rows;
+    std::size_t nR = 0;
+    std::size_t nC = 0;
+    void Check();
+};
+
 class TestCholetskyBase {
 public:
 	TestCholetskyBase() = default;
