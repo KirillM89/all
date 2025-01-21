@@ -2,6 +2,11 @@
 #include "scaler.h"
 #include <cmath>
 #include <algorithm>
+#define GMB
+#ifdef GMB
+#define BTOL 1.0e10
+#endif
+
 namespace QP_NNLS {
 Core::Core():
     problem(nullptr),
@@ -95,17 +100,57 @@ void Core::AllocateWs() {
 void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
                           const std::vector<double>& lb, const std::vector<double>& ub) {
     ws.Jac = Jac;
-    ws.Jac.resize(ws.Jac.size() + 2 * nVariables, std::vector<double>(nVariables, 0.0));
     ws.b = b;
+#ifdef GMB
+    for (auto& r : ws.Jac) {
+        r.resize(nVariables + 1, 0.0);
+    }
+    ws.Jac.resize(ws.Jac.size() + 2 * nVariables + 1, std::vector<double>(nVariables + 1 , 0.0));
+    ws.b.resize(ws.b.size() + 2 * nVariables + 1, 0.0);
+#else
+    ws.Jac.resize(ws.Jac.size() + 2 * nVariables, std::vector<double>(nVariables, 0.0));
     ws.b.resize(ws.b.size() + 2 * nVariables, 0.0);
+#endif
+#ifdef GMB
+    for (std::size_t iC = 0; iC < nConstraints; ++iC) {
+        if (ws.b[iC] >= BTOL) {
+            ws.b[iC] = 0.0;
+            ws.Jac[iC].back() = -1.0;
+        }
+        if (ws.b[iC] <= -BTOL) {
+            ws.b[iC] = 0.0;
+            ws.Jac[iC].back() = 1.0;
+        }
+    }
+    ws.Jac.back().back() = -1.0; // gamma >= 0; -gamma <= 0;
+#endif
     for (unsg_t i = 0; i < nVariables; ++i) {
         const int ibg = nConstraints + 2 * i;
         ws.Jac[ibg][i] = 1.0;
         ws.Jac[ibg + 1][i] = -1.0;
+#ifdef GMB
+        if (ub[i] >= BTOL) {
+            ws.Jac[ibg].back() = -1.0;
+            ws.b[ibg] = 0.0;
+        } else {
+            ws.b[ibg] = ub[i];
+        }
+        if (lb[i] <= -BTOL) {
+            ws.Jac[ibg + 1].back() = -1.0;
+            ws.b[ibg + 1] = 0.0;
+        } else {
+            ws.b[ibg + 1] = -lb[i];
+        }
+#else
         ws.b[ibg] = ub[i];
         ws.b[ibg + 1] = -lb[i];
+#endif
     }
     nConstraints += 2 * nVariables;
+#ifdef GMB
+    nConstraints += 1;
+    nVariables += 1;
+#endif
     ws.violations.resize(nConstraints, 0.0);
 }
 bool Core::PrepareNNLS(const DenseQPProblem &problem) {
@@ -120,6 +165,11 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
+#ifdef GMB
+    ws.H.resize(nVariables, std::vector<double>(nVariables, 0.0));
+    ws.H.back().back() = 1.0;
+    ws.c.resize(nVariables, 0.0);
+#endif
     SetRptInterval();
     AllocateWs();
     timer->Start();
@@ -193,9 +243,9 @@ bool Core::SkipCandidate(unsg_t indx) {
                 ++nNegative;
             }
         }
-        const unsg_t maxSize  = std::max(1U, nNegative);
-        const std::size_t coef = 0.5; // heuristic
-        bool isLongHistory = (coef * ws.addHistory.size() > maxSize);
+        nNegative = std::max(1U, nNegative);
+        const double coef = 0.5; // heuristic
+        bool isLongHistory = (static_cast<double>(ws.addHistory.size()) > 5.0);//static_cast<double>(nNegative));
         if (isLongHistory) {
             // the size of history is too big
             // reset history and operate only with violated constraints
@@ -262,7 +312,7 @@ unsg_t Core::SolvePrimal() {
     timer->Ticks();
     const std::size_t nActive = ws.activeConstraints.size();
     lSolver->SetGamma(gamma);
-    const LinSolverOutput& output = lSolver -> Solve();
+    const LinSolverOutput& output = lSolver->Solve();
     std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
     if (!settings.actSetUpdtSettings.rejectSingular) {
         ws.negativeZp.clear();
@@ -389,6 +439,9 @@ void Core::ComputeExactLambdaOnActiveSet() {
     for (auto i :ws.activeConstraints) {
         M.push_back(ws.M[i]);
         s.push_back(ws.s[i]);
+#ifdef GMB
+
+#endif
     }
     if (M.empty()) {
         return;
@@ -454,6 +507,10 @@ void Core::ComputeOrigSolution() {
 void Core::FillOutput() {
     output.dualExitStatus = dualExitStatus;
     output.primalExitStatus = primalExitStatus;
+#ifdef GMB
+    nVariables -= 1;
+    nConstraints -= 1;
+#endif
     output.nVariables = nVariables;
     output.nConstraints = nConstraints;
     output.nEqConstraints = nEqConstraints;
@@ -466,7 +523,7 @@ void Core::FillOutput() {
         for (std::size_t i = 0; i < nc; ++i) {
             output.lambda[i] = ws.lambda[i];
         }
-        for (std::size_t i = 0; i <nVariables; ++i) {
+        for (std::size_t i = 0; i < nVariables; ++i) {
             output.lambdaUp[i] = ws.lambda[nc + 2 * i];
             output.lambdaLw[i] = ws.lambda[nc + 2 * i + 1];
         }

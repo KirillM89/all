@@ -85,7 +85,7 @@ void TestInvertCholetsky(const matrix_t& m) {
     matrix_t cholF(m.size(), std::vector<double>(m.size(), 0.0));
     CholetskyOutput output;
     ComputeCholFactorT(m, cholF, output);
-    matrix_t mInv = cholF;
+    matrix_t mInv(m.size(), std::vector<double>(m.size(), 0.0));
     InvertCholetsky(cholF, mInv);
     matrix_t mult(m.size(), std::vector<double>(m.size()));
     Mult(cholF, mInv, mult);
@@ -928,7 +928,7 @@ void DenseQPTester::ComputeDlInfeasibility(const DenseQPProblem& problem) {
     double maxNegDual = 0.0;
     unsigned int nNegLambda = 0;
     bTL = 0.0;
-    for (std::size_t i = 0; i < output.lambda.size(); ++i) {
+    for (std::size_t i = 0; i < output.nConstraints - 2 * output.nVariables; ++i) {
         bTL += problem.b[i] * output.lambda[i];
         if (output.lambda[i] < 0.0) {
             maxNegDual = std::fmax(maxNegDual, -output.lambda[i]);
@@ -937,7 +937,7 @@ void DenseQPTester::ComputeDlInfeasibility(const DenseQPProblem& problem) {
     }
     lTL = 0.0;
     uTL = 0.0;
-    for (std::size_t i = 0; i < output.lambdaLw.size(); ++i) {
+    for (std::size_t i = 0; i < output.nVariables; ++i) {
         lTL += output.lambdaLw[i] * problem.lw[i];
         uTL += output.lambdaUp[i] * problem.up[i];
         if (output.lambdaLw[i] < 0.0) {

@@ -381,13 +381,13 @@ namespace QP_NNLS {
         //M = Chol_T * Chol, Chol - low triangular matrix
         const std::size_t n = Chol.size();
         for (int r = 0; r < n; ++r) {
-            const double diagInv = 1.0 / Chol[r][r];
-            for (int c = 0; c <= r; ++c) {
-                Inv[r][c] = (c == r) ? 1.0 : 0.0;
-                for (int i = 0; i < r; ++i) {
+            Inv[r][r]  = 1.0 / Chol[r][r];
+            for (int c = 0; c < r; ++c) {
+                Inv[r][c] = 0.0;
+                for (int i = c; i < r; ++i) {
                     Inv[r][c] -= Chol[r][i] * Inv[i][c];
                 }
-                Inv[r][c] *= diagInv;
+                Inv[r][c] *= Inv[r][r];
             }
         }
     }

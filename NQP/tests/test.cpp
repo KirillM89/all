@@ -387,6 +387,23 @@ TEST(Utils, InvertCholetskyT2) {
     const matrix_t M = {{2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
     TestInvertCholetsky(M);
 }
+TEST(Utils, InvertCholetskyT3) {
+    const matrix_t M = {{-2.0, 0.0, 0.0, 0.0},
+                        {6.0, 4.0, 0.0, 0.0},
+                        {10.0, -1.0, -7.0, 0.0},
+                        {3.0, -9.0, -2.0, 5.0}};
+    matrix_t Inv = M;
+    matrix_t mult = Inv;
+    InvertCholetsky(M, Inv);
+    Mult(M, Inv, mult);
+    const double eps = 1.0e-7;
+    for (int i = 0; i < M.size(); ++i) {
+        for (int j = 0; j < M.size(); ++j) {
+            EXPECT_NEAR(mult[i][j], i == j ? 1.0 : 0.0, eps);
+        }
+    }
+
+}
 TEST(Utils, Randomized_InvertCholetskyT1) {
     TestInvertCholetsky(GetRandomPosSemidefMatrix(10, -1.0, 1.0));
 }
