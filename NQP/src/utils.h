@@ -141,6 +141,22 @@ namespace QP_NNLS {
         std::vector<int> activeRows;
     };
 
+    class LDLTM {
+    public:
+        LDLTM() = default;
+        ~LDLTM() = default;
+        void Set(const matrix_t& M);
+        void Compute();
+        const matrix_t& GetL() { return L; }
+        const std::vector<double>& GetD() { return D; }
+        const std::vector<std::size_t>& GetP() { return P; }
+    private:
+        matrix_t* M = nullptr;
+        matrix_t& L;
+        std::vector<double>& D;
+        std::vector<std::size_t>& P;
+    };
+
     class MmtLinSolver {
     public:
         MmtLinSolver() = delete;

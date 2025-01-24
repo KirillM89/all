@@ -43,6 +43,7 @@ namespace QP_NNLS {
 		// cholF must be initialized with zeros
         const std::size_t n = M.size();
         // tmp by eigen
+        /*
         Eigen::MatrixXd A(n, n);
         for (std::size_t i = 0; i < n; ++i) {
             for (std::size_t j = 0; j < n; ++j) {
@@ -56,6 +57,7 @@ namespace QP_NNLS {
             }
         }
         return true;
+        */
 		output.negativeBlocking = 1.0; 
 		output.negativeDiag.clear();
 		output.pivoting = false;
@@ -974,6 +976,12 @@ namespace QP_NNLS {
                 l[i] = (b[i] - sum) / D[i]; // (b[i] - sum) / L[i][i] * D[i] , L[i][i] = 1
             }
         }
+    }
+    void LDLTM::Set(const matrix_t& M) {
+
+    }
+    void LDLTM::Compute() {
+
     }
     MmtLinSolver::MmtLinSolver(const matrix_t& M, const std::vector<double>& S):
         nDZero(0), maxSize(S.size()), curSize(0), gamma(1.0), ldlt(M,S), S(S),
