@@ -65,6 +65,8 @@ void TestLDL(const matrix_t& M);
 void TestLDLT(LDLT& solver, const matrix_t& M,
               const std::vector<double>&S,
               const std::set<unsigned int>& active);
+void TestLdlt(const matrix_t& M);
+void TestInPlaceLdlt(const matrix_t& M);
 void TestLDLRemove(matrix_t& M ,int i);
 void TestLDLAdd(matrix_t& M, const std::vector<double>& vc);
 void TestMMTb(const matrix_t& M, const std::vector<double>& b);

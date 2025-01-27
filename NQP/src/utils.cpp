@@ -439,6 +439,74 @@ namespace QP_NNLS {
 		InvertByGauss(M, Minv);
 	}
 
+    void Ldlt(const matrix_t& M, matrix_t& L, std::vector<double>& D, matrix_t& P) {
+        std::size_t n = M.size();
+        Eigen::MatrixXd MM(n, n);
+        for(std::size_t i = 0; i < n; ++i) {
+            P[i][i] = 1.0;
+            MM(i, i) = M[i][i];
+            for (std::size_t j = 0; j < i; ++j) {
+                MM(i, j) = M[i][j];
+                MM(j, i) = M[i][j];
+            }
+        }
+        Eigen::LDLT<Eigen::MatrixXd> ldlt(MM);
+        Eigen::MatrixXd l = ldlt.matrixL();
+        Eigen::VectorXd d = ldlt.vectorD();
+        Eigen::MatrixXi p(n, n);
+        p.setIdentity();
+        const auto& tr= ldlt.transpositionsP();
+        for (int i = 0; i < tr.size(); ++i) {
+            int j = tr[i];
+            if (i != j) {
+                p.row(i).swap(p.row(j));
+            }
+        }
+        for(std::size_t i = 0; i < n; ++i) {
+            D[i] = d(i);
+            std::cout << std::endl;
+            for (std::size_t j = 0; j < n; ++j) {
+                L[i][j] = l(i, j);
+                P[i][j] = p(i, j);
+                std::cout << P[i][j] << " ";
+            }
+        }
+        std::cout << std::endl;
+    }
+
+    void InPlaceLdlt(matrix_t& M, matrix_t& P) {
+        const std::size_t n = M.size();
+        /*
+        for (std::size_t r = 0; r < n; ++r) {
+            P[r][r] = 1.0;
+            for (std::size_t c = 0; c < r; ++c) {
+                M[r][r] -= M[r][c] * M[r][c] * M[c][c]; // d_rr
+            }
+            for (std::size_t k = r + 1; k < n; ++k) {
+                double sum = M[r][k];
+                for (std::size_t c = 0; c < r; ++c) {
+                    sum -=  M[k][c] * M[r][c] * M[c][c];
+                }
+                sum /= M[r][r];
+            }
+        }*/
+        for (std::size_t c = 0; c < n; ++c) {
+            P[c][c] = 1.0;
+            double d = 0.0;
+            for (std::size_t r = 0; r < c; ++r) {
+                d -= (M[c][r] * M[c][r] * M[r][r]); // d_rr
+            }
+            M[c][c] += d;
+            // go by rows in low triangular part
+            for (std::size_t r = c + 1; r < n; ++r) {
+                for (std::size_t k = 0; k < c; ++k) {
+                    M[r][c] -= (M[r][k] * M[c][k] * M[k][k]);
+                }
+                M[r][c] /= M[c][c];
+            }
+        }
+    }
+
 	const int MAX_N = 100;
 	void pivot(matrix_t& a, std::vector<double> b, int n, int k) {
 		int p = k;
@@ -977,12 +1045,7 @@ namespace QP_NNLS {
             }
         }
     }
-    void LDLTM::Set(const matrix_t& M) {
 
-    }
-    void LDLTM::Compute() {
-
-    }
     MmtLinSolver::MmtLinSolver(const matrix_t& M, const std::vector<double>& S):
         nDZero(0), maxSize(S.size()), curSize(0), gamma(1.0), ldlt(M,S), S(S),
         forward(std::vector<double>(maxSize)),

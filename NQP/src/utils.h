@@ -72,6 +72,10 @@ namespace QP_NNLS {
 
     void InvertCholetsky(const matrix_t& Chol, matrix_t& Inv); // invert hemitian matrix M using it's Choletsky decomposition M = L * L_T
 
+    void Ldlt(const matrix_t& M, matrix_t& L, std::vector<double>& D, matrix_t& P);
+
+    void InPlaceLdlt(matrix_t& M,  matrix_t& P);
+
 	matrix_t& operator-(matrix_t& M); // M -> -M
 
 	static inline bool isSame(double cand, double val, double tol = 1.0e-16) {
@@ -141,21 +145,6 @@ namespace QP_NNLS {
         std::vector<int> activeRows;
     };
 
-    class LDLTM {
-    public:
-        LDLTM() = default;
-        ~LDLTM() = default;
-        void Set(const matrix_t& M);
-        void Compute();
-        const matrix_t& GetL() { return L; }
-        const std::vector<double>& GetD() { return D; }
-        const std::vector<std::size_t>& GetP() { return P; }
-    private:
-        matrix_t* M = nullptr;
-        matrix_t& L;
-        std::vector<double>& D;
-        std::vector<std::size_t>& P;
-    };
 
     class MmtLinSolver {
     public:

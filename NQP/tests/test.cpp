@@ -466,6 +466,49 @@ TEST_P(TestCholetskyFullPivotingParametrized, Utils_Test1) {
 }
 INSTANTIATE_TEST_CASE_P(SUITE_1, TestCholetskyFullPivotingParametrized, ::testing::Values(PSDM::mat1, PSDM::mat2, PSDM::mat3, PSDM::mat4, PSDM::mat5, PSDM::mat6));
 
+TEST(Utils, InPlaceLDLT_T1) {
+    matrix_t M = {{1.0, 0.0, 0.0},
+                  {0.0, 1.0, 0.0},
+                  {0.0, 0.0, 1.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_T2) {
+    matrix_t M = {{2.0, 0.0, 0.0},
+                  {0.0, 2.0, 0.0},
+                  {0.0, 0.0, 2.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_T3) {
+    matrix_t M = {{2.0, 1.0, 0.0},
+                  {1.0, 2.0, 0.0},
+                  {0.0, 0.0, 2.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_T4) {
+    matrix_t M = {{15.0, 10.0, 0.0},
+                  {10.0, 2.0, 7.0},
+                  {0.0, 7.0, 2.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_T5) {
+    matrix_t M = {{1.0, -1.0, 3.0},
+                  {-1.0, 1.0, 0.0},
+                  {3.0, 0.0, 1.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_T6) {
+    matrix_t M = {{2.0, -1.0, 3.0, 0.0},
+                  {-1.0, 2.0, 0.0, 7.0},
+                  {3.0, 0.0, -4.0, -5.0},
+                  {0.0, 7.0, -5.0, -5.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_T7) {
+    matrix_t M = {{1.0, -1.0, 3.0},
+                  {-1.0, 1.0, 0.1},
+                  {3.0, 0.1, 1.0}};
+    TestInPlaceLdlt(M);
+}
 TEST(Utils_LDLT, Test1) {
     const matrix_t M = { {1.0}, {1.0} };
     const std::vector<double> S = {1.0, 1.0};

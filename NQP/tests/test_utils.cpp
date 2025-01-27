@@ -212,6 +212,66 @@ void TestLDL(const matrix_t& M) {
 	}
 }
 
+void TestLdlt(const matrix_t& M) {
+    const std::size_t n = M.size();
+    matrix_t L(n, std::vector<double>(n));
+    std::vector<double> D(n);
+    matrix_t P(n, std::vector<double>(n));
+    Ldlt(M, L, D, P);
+    ASSERT_EQ(L.size(), n);
+    ASSERT_EQ(D.size(), n);
+    ASSERT_EQ(P.size(), n);
+    matrix_t LD(n, std::vector<double>(n));
+    for (std::size_t i = 0; i < n; ++i) {
+        for (std::size_t j = 0; j < n; ++j) {
+            LD[i][j] = L[i][j] * D[j];
+        }
+    }
+    matrix_t LDLT(n, std::vector<double>(n));
+    M1M2T(LD, L, LDLT);
+    matrix_t PTL(n, std::vector<double>(n));
+    M1TM2(P, LDLT, PTL);
+    Mult(PTL, P, LDLT);
+    for (std::size_t i = 0; i < n; ++i) {
+        for (std::size_t j = 0; j < n; ++j) {
+            EXPECT_LT(relativeVal(M[i][j], LDLT[i][j]), 1.0e-6) << "res=" << LDLT[i][j] << " baseline="
+                    << M[i][j] << " i-j " << i << " " << j;
+        }
+    }
+}
+void TestInPlaceLdlt(const matrix_t& M) {
+    const std::size_t n = M.size();
+    matrix_t MCP = M;
+    std::vector<double> D(n);
+    matrix_t P(n, std::vector<double>(n));
+    InPlaceLdlt(MCP, P);
+    matrix_t L(MCP);
+    for (std::size_t i = 0; i < n; ++i) {
+        D[i] = L[i][i];
+        L[i][i] = 1.0;
+        for (std::size_t j = i + 1; j < n; ++j) {
+            L[i][j] = 0.0;
+        }
+    }
+    matrix_t LD(n, std::vector<double>(n));
+    for (std::size_t i = 0; i < n; ++i) {
+        for (std::size_t j = 0; j < n; ++j) {
+            LD[i][j] = L[i][j] * D[j];
+        }
+    }
+    matrix_t LDLT(n, std::vector<double>(n));
+    M1M2T(LD, L, LDLT);
+    matrix_t PTL(n, std::vector<double>(n));
+    M1TM2(P, LDLT, PTL);
+    Mult(PTL, P, LDLT);
+    for (std::size_t i = 0; i < n; ++i) {
+        for (std::size_t j = 0; j < n; ++j) {
+            EXPECT_LT(relativeVal(M[i][j], LDLT[i][j]), 1.0e-6) << "res=" << LDLT[i][j] << " baseline="
+                    << M[i][j] << " i-j " << i << " " << j;
+        }
+    }
+}
+
 void TestLDLRemove(matrix_t& M, int i) {
 	LDL ldl;
 	ldl.Set(M);
