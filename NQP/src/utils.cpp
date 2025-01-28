@@ -476,33 +476,26 @@ namespace QP_NNLS {
 
     void InPlaceLdlt(matrix_t& M, matrix_t& P) {
         const std::size_t n = M.size();
-        /*
-        for (std::size_t r = 0; r < n; ++r) {
-            P[r][r] = 1.0;
-            for (std::size_t c = 0; c < r; ++c) {
-                M[r][r] -= M[r][c] * M[r][c] * M[c][c]; // d_rr
-            }
-            for (std::size_t k = r + 1; k < n; ++k) {
-                double sum = M[r][k];
-                for (std::size_t c = 0; c < r; ++c) {
-                    sum -=  M[k][c] * M[r][c] * M[c][c];
-                }
-                sum /= M[r][r];
-            }
-        }*/
-        for (std::size_t c = 0; c < n; ++c) {
+        for (std::size_t c = 0; c < n; ++c) { // by columns
             P[c][c] = 1.0;
             double d = 0.0;
-            for (std::size_t r = 0; r < c; ++r) {
+            for (std::size_t r = 0; r < c; ++r) { // by rows
                 d -= (M[c][r] * M[c][r] * M[r][r]); // d_rr
             }
-            M[c][c] += d;
-            // go by rows in low triangular part
+            M[c][c] += d; // save d[c]
+            // go by rows in low triangular part and rewrite M[r][c] with L[r][c], r < c
+            // M[r][r] = 1.0
+            // L_ij = (M_ij - Sum_k=1:j L_ik * L_jk * D_k) / D_j
             for (std::size_t r = c + 1; r < n; ++r) {
+                double sum = 0.0;
                 for (std::size_t k = 0; k < c; ++k) {
-                    M[r][c] -= (M[r][k] * M[c][k] * M[k][k]);
+                    sum -= (M[r][k] * M[c][k] * M[k][k]);
                 }
-                M[r][c] /= M[c][c];
+                if (!isSame(M[c][c], 0.0)) {
+                    M[r][c] = (M[r][c] + sum) / M[c][c];
+                } else {
+                    M[r][c] = -sum;
+                }
             }
         }
     }
