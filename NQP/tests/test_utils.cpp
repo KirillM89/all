@@ -262,8 +262,8 @@ void TestInPlaceLdlt(const matrix_t& M) {
     matrix_t LDLT(n, std::vector<double>(n));
     M1M2T(LD, L, LDLT);
     matrix_t PTL(n, std::vector<double>(n));
-    M1TM2(P, LDLT, PTL);
-    Mult(PTL, P, LDLT);
+    Mult(P, LDLT, PTL);
+    M1M2T(PTL, P, LDLT);
     for (std::size_t i = 0; i < n; ++i) {
         for (std::size_t j = 0; j < n; ++j) {
             EXPECT_LT(relativeVal(M[i][j], LDLT[i][j]), 1.0e-6) << "res=" << LDLT[i][j] << " baseline="

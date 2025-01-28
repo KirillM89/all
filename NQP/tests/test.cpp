@@ -515,6 +515,44 @@ TEST(Utils, InPlaceLDLT_T11) {
                   {3.0, 0.1, 1.0}};
     TestInPlaceLdlt(M);
 }
+TEST(Utils, InPlaceLDLT_Swap2Elmts) {
+    matrix_t M = {{1.0 , -1.0, 3.0, 7.0},
+                  {-1.0, 1.0 , 0.1, -4.0},
+                  {3.0 , 0.1 , 1.0, 1.0},
+                  {7.0 ,-4.0 , 1.0, 10.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_1SwapT1) {
+    //swap 0 and 3
+    matrix_t M = {{1.0 , -1.0, 3.0, 7.0},
+                  {-1.0, 1.0 , 0.1, -4.0},
+                  {3.0 , 0.1 , 1.0, 1.0},
+                  {7.0 ,-4.0 , 1.0, 10.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_1SwapT2) {
+    //swap 0,3;
+    matrix_t M = {{1.0 , -1.0, 3.0, 7.0},
+                  {-1.0, 2.0 , 0.1, -4.0},
+                  {3.0 , 0.1 , 1.0, 1.0},
+                  {7.0 ,-4.0 , 1.0, 10.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_1SwapT3) {
+    //swap 1,2;
+    matrix_t M = {{ 5.0 , 0.1, -4.0},
+                  { 0.1 , 1.0, 1.0},
+                  {-4.0 , 1.0, 3.0}};
+    TestInPlaceLdlt(M);
+}
+TEST(Utils, InPlaceLDLT_2SwapT1) {
+    //swap 0,3; 1,2
+    matrix_t M = {{1.0 , -1.0, 3.0, 7.0},
+                  {-1.0, 1.0 , 0.1, -4.0},
+                  {3.0 , 0.1 , 3.0, 1.0},
+                  {7.0 ,-4.0 , 1.0, 10.0}};
+    TestInPlaceLdlt(M);
+}
 TEST(Utils_LDLT, Test1) {
     const matrix_t M = { {1.0}, {1.0} };
     const std::vector<double> S = {1.0, 1.0};

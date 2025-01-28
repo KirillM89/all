@@ -475,10 +475,36 @@ namespace QP_NNLS {
     }
 
     void InPlaceLdlt(matrix_t& M, matrix_t& P) {
+        bool pvt = true;
         const std::size_t n = M.size();
+        for (std::size_t i = 0; i < n; ++i) {
+            P[i][i] = 1.0;
+        }
         for (std::size_t c = 0; c < n; ++c) { // by columns
-            P[c][c] = 1.0;
             double d = 0.0;
+            if (pvt) {
+                std::size_t iMax = c;
+                double dmax = M[c][c];
+                for (std::size_t i = c; i < n; ++i) {
+                    if (M[i][i] > dmax) {
+                        iMax = i;
+                        dmax = M[i][i];
+                    }
+                }
+                // swap rows
+                if (iMax != c) {
+                    for (std::size_t i = 0; i < n; ++i) {
+                        std::swap(M[c][i], M[iMax][i]);
+                    }
+                    for (std::size_t i = 0; i < n; ++i) {
+                        std::swap(M[i][c], M[i][iMax]);
+                    }
+                    std::swap(P[c], P[iMax]);
+                }
+            } else {
+                P[c][c] = 1.0;
+            }
+
             for (std::size_t r = 0; r < c; ++r) { // by rows
                 d -= (M[c][r] * M[c][r] * M[r][r]); // d_rr
             }
@@ -495,6 +521,7 @@ namespace QP_NNLS {
                     M[r][c] = (M[r][c] + sum) / M[c][c];
                 } else {
                     M[r][c] = -sum;
+                    std::cout << "d = 0" << std::endl;
                 }
             }
         }
