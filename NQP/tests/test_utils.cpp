@@ -244,15 +244,29 @@ void TestInPlaceLdlt(const matrix_t& M) {
     matrix_t MCP = M;
     std::vector<double> D(n);
     matrix_t P(n, std::vector<double>(n));
-    InPlaceLdlt(MCP, P);
+    size_t iZero = 2;
+    size_t iNeg = 1;
+    InPlaceLdlt(MCP, P, iZero, iNeg);
+    ASSERT_LE(iZero, iNeg);
     matrix_t L(MCP);
+    std::cout << "zn " << iZero << " " << iNeg << std::endl;
+    std::cout << "d: ";
     for (std::size_t i = 0; i < n; ++i) {
         D[i] = L[i][i];
+        std::cout << D[i] << " ";
+        if (i < iZero) {
+            EXPECT_GT(D[i], 0.0);
+        } else if (i >= iZero && i < iNeg) {
+            EXPECT_NEAR(D[i], 0.0, 1.0e-12);
+        } else {
+            EXPECT_LT(D[i], 0.0);
+        }
         L[i][i] = 1.0;
         for (std::size_t j = i + 1; j < n; ++j) {
             L[i][j] = 0.0;
         }
     }
+    std::cout << std::endl;
     matrix_t LD(n, std::vector<double>(n));
     for (std::size_t i = 0; i < n; ++i) {
         for (std::size_t j = 0; j < n; ++j) {

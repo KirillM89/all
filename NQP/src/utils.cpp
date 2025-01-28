@@ -474,15 +474,16 @@ namespace QP_NNLS {
         std::cout << std::endl;
     }
 
-    void InPlaceLdlt(matrix_t& M, matrix_t& P) {
-        bool pvt = true;
+    void InPlaceLdlt(matrix_t& M, matrix_t& P, size_t& iZero, size_t& iNeg) {
         const std::size_t n = M.size();
+        iZero = n;
+        iNeg = n;
         for (std::size_t i = 0; i < n; ++i) {
             P[i][i] = 1.0;
         }
         for (std::size_t c = 0; c < n; ++c) { // by columns
             double d = 0.0;
-            if (pvt) {
+            if (bool pvt = true) {
                 std::size_t iMax = c;
                 double dmax = M[c][c];
                 for (std::size_t i = c; i < n; ++i) {
@@ -491,15 +492,12 @@ namespace QP_NNLS {
                         dmax = M[i][i];
                     }
                 }
-                // swap rows
                 if (iMax != c) {
+                    std::swap(M[c], M[iMax]); // swap rows
                     for (std::size_t i = 0; i < n; ++i) {
-                        std::swap(M[c][i], M[iMax][i]);
+                        std::swap(M[i][c], M[i][iMax]); // swap cols
                     }
-                    for (std::size_t i = 0; i < n; ++i) {
-                        std::swap(M[i][c], M[i][iMax]);
-                    }
-                    std::swap(P[c], P[iMax]);
+                    std::swap(P[c], P[iMax]); //update permutation matrix
                 }
             } else {
                 P[c][c] = 1.0;
@@ -509,6 +507,12 @@ namespace QP_NNLS {
                 d -= (M[c][r] * M[c][r] * M[r][r]); // d_rr
             }
             M[c][c] += d; // save d[c]
+            if (M[c][c] < 0.0 && iNeg == n) {
+                iNeg = c;
+            }
+            if (M[c][c] == 0 && iZero == n) {
+                iZero = c;
+            }
             // go by rows in low triangular part and rewrite M[r][c] with L[r][c], r < c
             // M[r][r] = 1.0
             // L_ij = (M_ij - Sum_k=1:j L_ik * L_jk * D_k) / D_j
@@ -520,11 +524,18 @@ namespace QP_NNLS {
                 if (!isSame(M[c][c], 0.0)) {
                     M[r][c] = (M[r][c] + sum) / M[c][c];
                 } else {
-                    M[r][c] = -sum;
-                    std::cout << "d = 0" << std::endl;
+                    M[r][c] = 0.0; // minor [0:c]x[0:c] is zero, M is indefinite or semidefinite matrix
                 }
             }
         }
+        assert(iZero <= n && iNeg <= n);
+        if (iZero < n && iNeg < n) {
+            assert(iZero < iNeg);
+        }
+        if (iZero == n && iNeg < n) { //no zero elements only pos and neg
+            iZero = iNeg;
+        }
+
     }
 
 	const int MAX_N = 100;

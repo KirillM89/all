@@ -74,7 +74,7 @@ namespace QP_NNLS {
 
     void Ldlt(const matrix_t& M, matrix_t& L, std::vector<double>& D, matrix_t& P);
 
-    void InPlaceLdlt(matrix_t& M,  matrix_t& P);
+    void InPlaceLdlt(matrix_t& M,  matrix_t& P, size_t& iZero, size_t& iNeg);
 
 	matrix_t& operator-(matrix_t& M); // M -> -M
 
