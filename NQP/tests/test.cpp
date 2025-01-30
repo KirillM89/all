@@ -553,6 +553,14 @@ TEST(Utils, InPlaceLDLT_2SwapT1) {
                   {7.0 ,-4.0 , 1.0, 10.0}};
     TestInPlaceLdlt(M);
 }
+TEST(Utils, InPlaceLDLT_PosSmdf1) {
+    //swap 0,3; 1,2
+    matrix_t M = {{1.0 , 2.0 , 3.0},
+                  {2.0 , 2.0 , -2.0},
+                  {3.0 ,-2.0 , 2.0}};
+
+    TestInPlaceLdlt(M);
+}
 TEST(Utils_LDLT, Test1) {
     const matrix_t M = { {1.0}, {1.0} };
     const std::vector<double> S = {1.0, 1.0};

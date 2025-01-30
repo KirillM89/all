@@ -497,16 +497,15 @@ namespace QP_NNLS {
                     for (std::size_t i = 0; i < n; ++i) {
                         std::swap(M[i][c], M[i][iMax]); // swap cols
                     }
-                    std::swap(P[c], P[iMax]); //update permutation matrix
+                    std::swap(P[c], P[iMax]); // update permutation matrix
                 }
             } else {
                 P[c][c] = 1.0;
             }
-
             for (std::size_t r = 0; r < c; ++r) { // by rows
                 d -= (M[c][r] * M[c][r] * M[r][r]); // d_rr
             }
-            M[c][c] += d; // save d[c]
+            M[c][c] += d; //save d[c]
             if (M[c][c] < 0.0 && iNeg == n) {
                 iNeg = c;
             }
