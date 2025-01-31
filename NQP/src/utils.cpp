@@ -520,6 +520,10 @@ namespace QP_NNLS {
             if (M[c][c] == 0 && iZero == n) {
                 iZero = c;
             }
+            if (isSame(M[c][c], 0.0)) {
+                M[c][c] += 1.0;
+            }
+
             // go by rows in low triangular part and rewrite M[r][c] with L[r][c], r < c
             // M[r][r] = 1.0
             // L_ij = (M_ij - Sum_k=1:j L_ik * L_jk * D_k) / D_j
@@ -535,10 +539,7 @@ namespace QP_NNLS {
                 }
             }
         }
-      //  assert(iZero <= n && iNeg <= n);
-        if (iZero < n && iNeg < n) {
-         //   assert(iZero < iNeg);
-        }
+
         if (iZero == n && iNeg < n) { //no zero elements only pos and neg
             iZero = iNeg;
         }

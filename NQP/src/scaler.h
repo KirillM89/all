@@ -37,8 +37,8 @@ public:
     void Scale() {
         scaleCoefs.resize(M.size());
         balanceFactor.resize(M.size(), 1.0);
-        const double thMin = 1.0e-14;
-        const double thMax = 1.0e14;
+        const double thMin = 1.0;
+        const double thMax = 1.0;
         const double minSf = 1.0e-8;
         double scaleFactorSL = 1.0; // limited
         double scaleFactorSU = 1.0; // unlimited
@@ -92,7 +92,7 @@ public:
             // balance only good constraints
             scaleFactorS = scaleFactorSL;
         }
-
+        scaleFactorS = 1.0;
 
         for (std::size_t i = 0; i < M.size(); ++i) {
             s[i] *= scaleFactorS;

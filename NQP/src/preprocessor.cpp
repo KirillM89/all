@@ -16,6 +16,9 @@ void NqpPreprocessor::Prepare(const DenseQPProblem& problem) {
     matrix_t L(newProblem.H);
     for (std::size_t i = 0; i < nv; ++i) {
         L[i][i] = 1.0;
+        if (isSame(newProblem.H[i][i], 0.0)) {
+            newProblem.H[i][i] = 1.0;
+        }
         std::cout << newProblem.H[i][i] << " ";
         for (std::size_t j = i + 1 ; j < nv; ++j) {
             L[i][j] = 0.0;
@@ -46,16 +49,17 @@ const DenseQPProblem& NqpPreprocessor::GetProblem() const {
 }
 
 void NqpPreprocessor::RecomputeQutput(SolverOutput& sol) const {
-    sol.nConstraints -= 2 * sol.nVariables; // include bounds
+    /*
     std::size_t nc = sol.nConstraints - 2 * sol.nVariables;
-    //recompute Lambda
     for (std::size_t i = 0; i < sol.nVariables; ++i) {
         sol.lambdaUp[i] = sol.lambda[nc + 2 * i];
         sol.lambdaLw[i] = sol.lambda[nc + 2 * i + 1];
     }
-    sol.lambda.resize(sol.nConstraints);
+    sol.lambda.resize(nc);*/
+    if (sol.dualExitStatus != DualLoopExitStatus::INFEASIBILITY) {
     std::vector<double> x = sol.x;
     Mult(PlInv, x, sol.x);
+    }
 }
 
 } // QP_NNLS

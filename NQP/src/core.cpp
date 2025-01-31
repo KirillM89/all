@@ -2,7 +2,7 @@
 #include "scaler.h"
 #include <cmath>
 #include <algorithm>
-//#define GMB
+#define GMB
 #ifdef GMB
 #define BTOL 1.0e10
 #endif
@@ -99,18 +99,22 @@ void Core::AllocateWs() {
 }
 void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
                           const std::vector<double>& lb, const std::vector<double>& ub) {
+    bool skipBounds = true;
     ws.Jac = Jac;
     ws.b = b;
+    std::size_t extSize = 0;
 #ifdef GMB
+    extSize = 1;
     for (auto& r : ws.Jac) {
-        r.resize(nVariables + 1, 0.0);
+        r.resize(nVariables + extSize, 0.0);
     }
-    ws.Jac.resize(ws.Jac.size() + 2 * nVariables + 1, std::vector<double>(nVariables + 1 , 0.0));
-    ws.b.resize(ws.b.size() + 2 * nVariables + 1, 0.0);
-#else
-    ws.Jac.resize(ws.Jac.size() + 2 * nVariables, std::vector<double>(nVariables, 0.0));
-    ws.b.resize(ws.b.size() + 2 * nVariables, 0.0);
+    ws.Jac.resize(ws.Jac.size() + extSize, std::vector<double>(nVariables + extSize , 0.0));
+    ws.b.resize(ws.b.size() + extSize, 0.0);
 #endif
+if (!skipBounds) {
+    ws.Jac.resize(ws.Jac.size() + 2 * nVariables, std::vector<double>(nVariables + extSize , 0.0));
+    ws.b.resize(ws.b.size() + 2 * nVariables, 0.0);
+}
 #ifdef GMB
     for (std::size_t iC = 0; iC < nConstraints; ++iC) {
         if (ws.b[iC] >= BTOL) {
@@ -124,6 +128,7 @@ void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
     }
     ws.Jac.back().back() = -1.0; // gamma >= 0; -gamma <= 0;
 #endif
+if (!skipBounds) {
     for (unsg_t i = 0; i < nVariables; ++i) {
         const int ibg = nConstraints + 2 * i;
         ws.Jac[ibg][i] = 1.0;
@@ -147,6 +152,7 @@ void Core::ExtendJacobian(const matrix_t& Jac, const std::vector<double>& b,
 #endif
     }
     nConstraints += 2 * nVariables;
+}
 #ifdef GMB
     nConstraints += 1;
     nVariables += 1;
