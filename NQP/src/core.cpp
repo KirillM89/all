@@ -2,7 +2,7 @@
 #include "scaler.h"
 #include <cmath>
 #include <algorithm>
-#define GMB
+//#define GMB
 #ifdef GMB
 #define BTOL 1.0e10
 #endif

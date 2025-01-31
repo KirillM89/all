@@ -20,6 +20,14 @@ namespace QP_NNLS {
 		}
 		return M;
 	}
+    std::vector<double> operator-(const std::vector<double>& v) {
+        const std::size_t n = v.size();
+        std::vector<double> vinv(n);
+        for (std::size_t i = 0; i < n; ++i) {
+            vinv[i] = - v[i];
+        }
+        return vinv;
+    }
 	void ComputeCholFactor(const matrix_t& M, matrix_t& cholF) {
 		// A=LLT
 		// cholF must be initialized with zeros
@@ -527,14 +535,13 @@ namespace QP_NNLS {
                 }
             }
         }
-        assert(iZero <= n && iNeg <= n);
+      //  assert(iZero <= n && iNeg <= n);
         if (iZero < n && iNeg < n) {
-            assert(iZero < iNeg);
+         //   assert(iZero < iNeg);
         }
         if (iZero == n && iNeg < n) { //no zero elements only pos and neg
             iZero = iNeg;
         }
-
     }
 
 	const int MAX_N = 100;

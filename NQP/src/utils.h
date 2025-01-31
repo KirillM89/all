@@ -78,6 +78,8 @@ namespace QP_NNLS {
 
 	matrix_t& operator-(matrix_t& M); // M -> -M
 
+    std::vector<double> operator-(const std::vector<double>& v); // return -v
+
 	static inline bool isSame(double cand, double val, double tol = 1.0e-16) {
 		assert(tol > 0.0);
 		const double diff = cand - val;

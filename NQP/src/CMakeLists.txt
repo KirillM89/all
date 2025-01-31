@@ -7,7 +7,7 @@ target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/linSolvers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/scaler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/callback.cpp
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/preprocessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/log.h
     ${CMAKE_CURRENT_SOURCE_DIR}/timers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.h
@@ -17,4 +17,5 @@ target_sources(qnnls PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/scaler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/core.h
     ${CMAKE_CURRENT_SOURCE_DIR}/callback.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/preprocessor.h
 )

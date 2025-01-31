@@ -2,7 +2,8 @@
 #include "utils.h"
 #include "qp.h"
 #include "data_writer.h"
-
+#include "preprocessor.h"
+#define PRP
 bool isNumber(const double& val) {
 	return std::isfinite(val);
 }
@@ -894,7 +895,13 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
 
     this -> problemName = problemName;
     result.Reset();
+    NqpPreprocessor prePr;
+#ifdef PRP
+    prePr.Prepare(problem);
+    if(!solver.SetProblem(prePr.GetProblem())) {
+#else
     if(!solver.SetProblem(problem)) {
+#endif
         result.status = false;
         result.errMsg.clear();
         InitStageStatus initStatus = solver.GetInitStatus();
@@ -906,6 +913,9 @@ const QPTestResult& DenseQPTester::Test(const DenseQPProblem& problem,
     } else {
         solver.Solve();
         output = solver.GetOutput();
+#ifdef PRP
+        prePr.RecomputeQutput(output);
+#endif
         CheckOutput(output);
         if (result.status) {
             ComputePrInfeasibility(problem);
