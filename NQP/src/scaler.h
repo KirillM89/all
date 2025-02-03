@@ -96,10 +96,13 @@ public:
 
         for (std::size_t i = 0; i < M.size(); ++i) {
             s[i] *= scaleFactorS;
-            scaleCoefs[i] = 1.0 / sqrt(scaleCoefs[i] + s[i] * s[i]);
-            s[i] *= scaleCoefs[i];
-            for (std::size_t j = 0; j < M[i].size(); ++j) {
-                M[i][j] *= scaleCoefs[i];
+            double fullNorm = scaleCoefs[i] + s[i] * s[i];
+            if (!isSame(fullNorm, 0.0)) {
+                scaleCoefs[i] = 1.0 / sqrt(fullNorm);
+                s[i] *= scaleCoefs[i];
+                for (std::size_t j = 0; j < M[i].size(); ++j) {
+                    M[i][j] *= scaleCoefs[i];
+                }
             }
         }
         sCoefs.scaleFactorS = scaleFactorS;

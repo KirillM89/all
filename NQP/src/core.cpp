@@ -173,7 +173,7 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
 #ifdef GMB
     ws.H.resize(nVariables, std::vector<double>(nVariables, 0.0));
-    ws.H.back().back() = 1.0e5;
+    ws.H.back().back() = 1.0;
     ws.c.resize(nVariables, 0.0);
 #endif
     SetRptInterval();
