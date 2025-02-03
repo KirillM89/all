@@ -37,8 +37,8 @@ public:
     void Scale() {
         scaleCoefs.resize(M.size());
         balanceFactor.resize(M.size(), 1.0);
-        const double thMin = 1.0;
-        const double thMax = 1.0;
+        const double thMin = 1.0e-4;
+        const double thMax = 1.0e4;
         const double minSf = 1.0e-8;
         double scaleFactorSL = 1.0; // limited
         double scaleFactorSU = 1.0; // unlimited
@@ -48,31 +48,33 @@ public:
                 norm2 += M[i][j] * M[i][j];
             }
             double s2 = s[i] * s[i];
-            const double rat = norm2 / s2;
-            if (thMin < rat && rat < thMax) {
-                // check if ratio is in bounds in which scaling can be done
-                // without possible numerical problems
-                // Remark:
-                // if rat is not small or big e.g. ~1, or e.g. ~1.0e-2
-                // may be case when final scale factor will be unsufficient, but the
-                // condition  thMin < rat && rat < thMax is satisfied not for all the constraints,
-                // so other unbalanced constraints will be bad scaled
-                const double ratRoot = sqrt(rat);
-                double scaleFactor = ratRoot;
-                scaleFactorSL = std::fmin(scaleFactor, scaleFactorSL);
+            if (isSame(s2, 0.0)) {
+
             } else {
-                double bf = 1.0; // balance factor
-                if (rat <  thMin) {
-                    bf = rat / thMin;  // < 1
-                } else if (rat > thMax){
-                    bf = rat / thMax;  // > 1
+                const double rat = norm2 / s2;
+                if (thMin < rat && rat < thMax) {
+                    // check if ratio is in bounds in which scaling can be done
+                    // without possible numerical problems
+                    // Remark:
+                    // if rat is not small or big e.g. ~1, or e.g. ~1.0e-2
+                    // may be case when final scale factor will be unsufficient, but the
+                    // condition  thMin < rat && rat < thMax is satisfied not for all the constraints,
+                    // so other unbalanced constraints will be bad scaled
+                    scaleFactorSL = std::fmin(sqrt(rat), scaleFactorSL);
+                } else {
+                    double bf = 1.0; // balance factor
+                    if (rat <  thMin) {
+                        bf = rat / thMin;  // < 1
+                    } else if (rat > thMax){
+                        bf = rat / thMax;  // > 1
+                    }
+                    // s' = bf * s
+                    if (bf < scaleFactorSU) { // ||M|| << ||s||
+                        scaleFactorSU = std::fmax(minSf, bf);
+                    }
                 }
-                // s' = bf * s
-                if (bf < scaleFactorSU) { // ||M|| << ||s||
-                    scaleFactorSU = std::fmax(minSf, bf);
-                }
+                //TODO: implement scaleFactor Up
             }
-            //TODO: implement scaleFactor Up
             scaleCoefs[i] = norm2; // save norms
         }
         const bool blncL = isSame(scaleFactorSL, 1.0);
@@ -80,7 +82,6 @@ public:
         if (blncL && !blncU) {
             // all the constraints are very unbalanced
             scaleFactorS = scaleFactorSU;
-
         } else if (!blncL && blncU) {
             // all the constraints are good balanced
             scaleFactorS = scaleFactorSL;
@@ -93,7 +94,13 @@ public:
             scaleFactorS = scaleFactorSL;
         }
         scaleFactorS = 1.0;
-
+        const double alf = 1.0e-5;
+        for (std::size_t i = 0; i < M.size(); ++i) {
+            for (std::size_t j = 0; j < M[i].size(); ++j) {
+                double rat =  (M[i][j] * M[i][j] - alf * alf * scaleCoefs[i]) / (s[i] * s[i]);
+                scaleFactorS = std::fmin(scaleFactorS, sqrt(rat));
+            }
+        }
         for (std::size_t i = 0; i < M.size(); ++i) {
             s[i] *= scaleFactorS;
             double fullNorm = scaleCoefs[i] + s[i] * s[i];

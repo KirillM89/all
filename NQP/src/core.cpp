@@ -396,7 +396,6 @@ void Core::ScaleD() {
     for (unsg_t i = 0; i < n; ++i) {
         if (i < nConstraints) {
             ws.b[i] *= scaleFactorDB;
-            //ws.s[i] *= scaleFactorDB;
         }
         if (i < nVariables) {
             ws.c[i] *= scaleFactorDB;
