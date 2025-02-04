@@ -673,6 +673,49 @@ TEST(Utils_LDLT, Add) {
     tester.Add(0);
     tester.Add(4);
 }
+TEST(Utils_LDLT, AddPvt) {
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-10.0, -10.0, 10.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-6.0, 10.0, 1500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    LdltTester tester;
+    tester.Set(M, S);
+    tester.AddPvt(1);
+    tester.AddPvt(3);
+    tester.AddPvt(2);
+    tester.AddPvt(0);
+    tester.AddPvt(4);
+}
+TEST(Utils_LDLT, DelPvt) {
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-10.0, -10.0, 10.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-6.0, 10.0, 1500.5 }};
+    const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    LdltTester tester;
+    tester.Set(M, S);
+    //case 1
+    tester.AddPvt(1);
+    tester.Delete(1);
+    //case 2
+    tester.AddPvt(2);
+    tester.AddPvt(0);
+    tester.Delete(0);
+    tester.Delete(2);
+    //case 3             // matrix size:
+    tester.AddPvt(1);    // 1
+    tester.AddPvt(4);    // 2
+    tester.Delete(1);    // 1
+    tester.AddPvt(1);    // 2
+    tester.Delete(4);    // 1
+    tester.AddPvt(3);    // 2
+    tester.AddPvt(0);    // 3
+    tester.Delete(3);    // 2
+    tester.AddPvt(2);    // 3
+}
 TEST(Utils_LDLT, Del) {
     const matrix_t M = {{1.0, 2.0, -3.0},
                         {-10.0, -10.0, 10.0},

@@ -37,7 +37,8 @@ CumulativeLDLTSolver::CumulativeLDLTSolver(const matrix_t& M,
 { }
 
 bool CumulativeLDLTSolver::Add(unsg_t indx) {
-    ldlt.Add(indx);
+    //ldlt.Add(indx);
+    ldlt.AddPvt(indx);
     return true;
 }
 bool CumulativeLDLTSolver::Delete(unsg_t indx) {

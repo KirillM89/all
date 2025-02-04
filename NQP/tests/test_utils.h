@@ -81,6 +81,7 @@ public:
     ~LdltTester() = default;
     void Set(const matrix_t& M, const std::vector<double>& S);
     void Add(unsigned int index);
+    void AddPvt(unsigned int index);
     void Delete(unsigned int index);
 private:
     matrix_t M;

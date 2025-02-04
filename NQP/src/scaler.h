@@ -97,8 +97,10 @@ public:
         const double alf = 1.0e-5;
         for (std::size_t i = 0; i < M.size(); ++i) {
             for (std::size_t j = 0; j < M[i].size(); ++j) {
-                double rat =  (M[i][j] * M[i][j] - alf * alf * scaleCoefs[i]) / (s[i] * s[i]);
-                scaleFactorS = std::fmin(scaleFactorS, sqrt(rat));
+                if (!isSame(s[i], 0.0)) {
+                    double rat =  (M[i][j] * M[i][j] - alf * alf * scaleCoefs[i]) / (s[i] * s[i]);
+                    scaleFactorS = std::fmin(scaleFactorS, sqrt(rat));
+                }
             }
         }
         for (std::size_t i = 0; i < M.size(); ++i) {

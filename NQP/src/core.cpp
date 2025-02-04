@@ -444,20 +444,17 @@ void Core::ComputeExactLambdaOnActiveSet() {
     for (auto i :ws.activeConstraints) {
         M.push_back(ws.M[i]);
         s.push_back(ws.s[i]);
-#ifdef GMB
-
-#endif
     }
     if (M.empty()) {
         return;
     }
-    MMTbSolver mmtb;
-    mmtb.Solve(M, s);
-    std::vector<double> solActiveSet = mmtb.GetSolution();
+
+    //mmtb.Solve(M, s);
+    /*std::vector<double> solActiveSet = mmtb.GetSolution();
     std::size_t ii = 0;
     for (auto i :ws.activeConstraints) {
         ws.lambda[i] = solActiveSet[ii++];
-    }
+    }*/
 }
 
 void Core::ComputeDualityGap() {
@@ -494,7 +491,7 @@ void Core::ComputeOrigSolution() {
     for (unsg_t i = 0; i < nConstraints; ++i) {
         ws.lambda[i] = lambdaTerm * ws.primal[i] ;
     }
-    ComputeExactLambdaOnActiveSet();
+   // ComputeExactLambdaOnActiveSet();
     std::vector<double> u(nVariables, 0.0);
     MultTransp(ws.M, ws.lambda, ws.activeConstraints, u);
     std::vector<double> u_v(nVariables);

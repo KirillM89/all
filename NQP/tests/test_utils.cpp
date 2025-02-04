@@ -504,6 +504,12 @@ void LdltTester::Add(unsigned int index) {
     solver->Add(index);
     Check();
 }
+void LdltTester::AddPvt(unsigned int index) {
+    rows.insert(index);
+    ASSERT_LT(index, nR);
+    solver->AddPvt(index);
+    Check();
+}
 void LdltTester::Delete(unsigned int index) {
     rows.erase(index);
     ASSERT_LT(index, nR);
@@ -513,6 +519,15 @@ void LdltTester::Delete(unsigned int index) {
 void LdltTester::Check() {
     const auto& rows = solver->GetRows();
     const std::size_t nr = rows.size();
+    const auto pivots = solver->GetPivots();
+    if (!pivots.empty()) {
+        ASSERT_EQ(pivots.size(), nr);
+        double pvt = std::numeric_limits<double>::max();
+        for (auto el : pivots){
+            ASSERT_LE(el, pvt);
+            pvt = el;
+        }
+    }
     ASSERT_EQ(nr, this->rows.size());
     matrix_t mmt(nr, std::vector<double>(nr));
     std::size_t i = 0;

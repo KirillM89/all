@@ -836,7 +836,18 @@ namespace QP_NNLS {
         }
         return ndzero;
     }
-
+    void LDLT::AddPvt(std::size_t rowNumber, bool delMode) {
+        std::size_t pos = std::distance(pivots.begin(), pivots.insert(norms2[rowNumber]));
+        auto itr = rows.begin();
+        std::advance(itr, pos);
+        std::vector<unsigned int> r(rows.begin(), rows.end());
+        rows = std::list<unsigned int>(rows.begin(), itr);
+        actSize = pos;
+        Add(rowNumber, delMode);
+        for (auto it = r.begin() + pos; it != r.end(); ++it) {
+            Add(*it, delMode);
+        }
+    }
     void LDLT::Add(std::size_t rowNumber, bool delMode) {
         // add row with index rowNumber to last position and recompute L and D
         d = norms2[rowNumber];
@@ -896,6 +907,11 @@ namespace QP_NNLS {
         actSize = 0;
         for (std::list<unsigned int>::iterator it = rows.begin(); it != rows.end(); ++it){
             if (!deleted && (*it == rowNumber)) {
+                if (!pivots.empty()) {
+                    auto itp = pivots.begin();
+                    std::advance(itp, std::distance(rows.begin(), it));
+                    pivots.erase(itp);
+                }
                 if((it = rows.erase(it)) == rows.end()) {
                     return;
                 }

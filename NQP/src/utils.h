@@ -94,10 +94,12 @@ namespace QP_NNLS {
         virtual ~LDLT() = default;
         unsigned int Compute(const std::set<unsigned int>& activeColumns);
         void Add(std::size_t row, bool delMode = false);
+        void AddPvt(std::size_t row, bool delMode = false);
         void Delete(std::size_t row);
         const std::list<unsigned int>& GetRows() { return rows;}
         const matrix_t& GetL() { return L;}
         const std::vector<double>& GetD() { return D;}
+        const std::multiset<double, std::greater<double>>& GetPivots() { return pivots;}
     private:
         const double dTol = 1.0e-16;
         const double inf = 1.0e30;
@@ -113,6 +115,7 @@ namespace QP_NNLS {
         std::vector<double> D;
         std::vector<double> norms2;
         std::list<unsigned int> rows;
+        std::multiset<double, std::greater<double>> pivots;
         matrix_t cache;
     };
 
