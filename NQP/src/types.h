@@ -112,7 +112,7 @@ struct UserSettings {
 	ProblemConfiguration configuration = ProblemConfiguration::DENSE;
 	DBScalerStrategy dbScalerStrategy = DBScalerStrategy::SCALE_FACTOR;
 	CholPivotingStrategy cholPvtStrategy = CholPivotingStrategy::NO_PIVOTING;
-	int nDualIterations = 100;
+    int nDualIterations = 5;
 	int nPrimalIterations = 100;
     int logLevel = 3;
 	double nnlsResidNormFsb = 1.0e-16;

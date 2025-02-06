@@ -50,26 +50,9 @@ namespace QP_NNLS {
 		// A=L_T * L
 		// cholF must be initialized with zeros
         const std::size_t n = M.size();
-        // tmp by eigen
-        /*
-        Eigen::MatrixXd A(n, n);
-        for (std::size_t i = 0; i < n; ++i) {
-            for (std::size_t j = 0; j < n; ++j) {
-                A(i, j) = M[i][j];
-            }
-        }
-        Eigen::MatrixXd L = A.llt().matrixL();
-        for (std::size_t i = 0; i < n; ++i) {
-            for (std::size_t j = 0; j < n; ++j) {
-                cholF[i][j] = L(i, j);
-            }
-        }
-        return true;
-        */
 		output.negativeBlocking = 1.0; 
 		output.negativeDiag.clear();
 		output.pivoting = false;
-
 		for (int row = n - 1; row >= 0; --row) {
 			for (int col = row; col >= 0; --col) {
 				double sum = 0.0;

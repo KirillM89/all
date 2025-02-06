@@ -98,7 +98,10 @@ public:
         for (std::size_t i = 0; i < M.size(); ++i) {
             for (std::size_t j = 0; j < M[i].size(); ++j) {
                 if (!isSame(s[i], 0.0)) {
-                    double rat =  (M[i][j] * M[i][j] - alf * alf * scaleCoefs[i]) / (s[i] * s[i]);
+                    double rat = (M[i][j] * M[i][j] - alf * alf * scaleCoefs[i]) / (s[i] * s[i]);
+                    if (rat <= 1.0e-16) {
+                        continue;
+                    }
                     scaleFactorS = std::fmin(scaleFactorS, sqrt(rat));
                 }
             }

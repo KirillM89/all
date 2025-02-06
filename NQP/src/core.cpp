@@ -171,6 +171,7 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
+    //settings.nDualIterations = std::max(settings.nDualIterations, nConstraints);
 #ifdef GMB
     ws.H.resize(nVariables, std::vector<double>(nVariables, 0.0));
     ws.H.back().back() = 1.0;
@@ -251,7 +252,7 @@ bool Core::SkipCandidate(unsg_t indx) {
         }
         nNegative = std::max(1U, nNegative);
         const double coef = 0.5; // heuristic
-        bool isLongHistory = (static_cast<double>(ws.addHistory.size()) > 5.0);//static_cast<double>(nNegative));
+        bool isLongHistory = (static_cast<double>(ws.addHistory.size()) > 100.0);//static_cast<double>(nNegative));
         if (isLongHistory) {
             // the size of history is too big
             // reset history and operate only with violated constraints
@@ -292,6 +293,7 @@ bool Core::IsCandidateForNewActive(unsg_t indx, double toCompare, bool skip) {
 unsg_t Core::SelectNewActiveComponent() {
     // strategy with selection of minimum dual component as new active
     double newActive = std::numeric_limits<double>::max();
+    const unsg_t prevActiveIndex = newActiveIndex;
     newActiveIndex = nConstraints; //default value
     bool newFound = false;
     if (settings.actSetUpdtSettings.firstInactive) {
@@ -310,6 +312,24 @@ unsg_t Core::SelectNewActiveComponent() {
                 newFound = true;
             }
         }
+    }
+    //check cycling
+    if (prevActiveIndex == newActiveIndex) {
+        int iLast = nConstraints - 1;
+    #ifdef GMB
+        iLast -= 1;
+    #endif
+        int iOpposite = nConstraints;
+        if (newActiveIndex <= iLast) {
+            int iIneq = newActiveIndex - nEqConstraints;
+            iOpposite = iIneq % 2 == 0 ? newActiveIndex + 1 : newActiveIndex - 1;
+        }
+        if (ws.activeConstraints.find(iOpposite) != ws.activeConstraints.end()) {
+            RmvFromActiveSet(iOpposite);
+        }
+        cycling = true;
+    } else {
+        cycling = false;
     }
     return newActiveIndex;
 }
@@ -345,14 +365,16 @@ bool Core::MakeLineSearch() {
     bool stepFound = false;
     // case if all zp are non-negative must be proccessed before this function, negativePrimalIndices must not be empty
     for (auto indx: ws.negativeZp) {
-        double denominator = ws.primal[indx] - ws.zp[indx];
-        if (!isSame(denominator, 0.0)) {
-            minStep = std::fmin(minStep, ws.primal[indx] / denominator);
-            stepFound = true;
+        if (!isSame(ws.primal[indx], 0.0)) {
+            double denominator = ws.primal[indx] - ws.zp[indx];
+            if (!isSame(denominator, 0.0)) {
+                minStep = std::fmin(minStep, std::fabs(ws.primal[indx] / denominator));
+                stepFound = true;
+            }
         }
     }
     if (stepFound) {
-        //primal_next = primal + step * (zp - primal)
+        //primal_next = primal_cur + step * (zp - primal)
         gammaCorrection = 0.0;
         for (unsg_t i = 0; i < nConstraints; ++i) {
             ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
@@ -422,11 +444,21 @@ void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
         gamma = std::fabs(gamma - gammaCorrection);
     }
+    if (cycling) {
+        double corr = primalIteration % 2 == 0 ? primalIteration + 1 : 1.0 / primalIteration;
+        gamma *= corr;
+    }
+
 }
 void Core::UpdateGammaOnDualIteration() {
     if (settings.gammaUpdate == true) {
         gamma += std::fabs(ws.s[newActiveIndex]);
     }
+    if (cycling) {
+        double corr = dualIteration % 2 == 0 ? dualIteration : 1.0 / dualIteration;
+        gamma *= corr;
+    }
+
 }
 void Core::ComputeCost() {
     cost = DotProduct(ws.c, ws.x);
@@ -625,7 +657,7 @@ void Core::Solve() {
         }
         UpdateGammaOnDualIteration();
         AddToActiveSet(newActiveIndex);
-        unsg_t primalIteration = 0;
+        primalIteration = 0;
         primalExitStatus = PrimalLoopExitStatus::UNKNOWN;
         singularIndex = nConstraints;
         while (primalIteration < settings.nPrimalIterations) {

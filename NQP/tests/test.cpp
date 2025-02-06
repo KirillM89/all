@@ -688,13 +688,43 @@ TEST(Utils_LDLT, AddPvt) {
     tester.AddPvt(0);
     tester.AddPvt(4);
 }
-TEST(Utils_LDLT, DelPvt) {
+TEST(Utils_LDLT, DelPvt1) {
     const matrix_t M = {{1.0, 2.0, -3.0},
                         {-10.0, -10.0, 10.0},
                         {5.0, 5.0, 5.0},
                         {-0.002, 10.33, 0.9},
                         {-6.0, 10.0, 1500.5 }};
     const std::vector<double> S = {3.0, -10.0, 15.0, 0.0, -9.0};
+    LdltTester tester;
+    tester.Set(M, S);
+    //case 1
+    tester.AddPvt(1);
+    tester.Delete(1);
+    //case 2
+    tester.AddPvt(2);
+    tester.AddPvt(0);
+    tester.Delete(0);
+    tester.Delete(2);
+    //case 3             // matrix size:
+    tester.AddPvt(1);    // 1
+    tester.AddPvt(4);    // 2
+    tester.Delete(1);    // 1
+    tester.AddPvt(1);    // 2
+    tester.Delete(4);    // 1
+    tester.AddPvt(3);    // 2
+    tester.AddPvt(0);    // 3
+    tester.Delete(3);    // 2
+    tester.AddPvt(2);    // 3
+}
+TEST(Utils_LDLT, DelPvt2) {
+    //case with equal norms
+    const matrix_t M = {{1.0, 2.0, -3.0},
+                        {-1.0, -3.0, 2.0},
+                        {5.0, 5.0, 5.0},
+                        {-0.002, 10.33, 0.9},
+                        {-1.5, 0.0 , 11.5 }};
+    const std::vector<double> S = {3.0, -3.0, 15.0, 0.0, 4.0};
+    //norms2[0] = 23 norms2[1] = 23
     LdltTester tester;
     tester.Set(M, S);
     //case 1

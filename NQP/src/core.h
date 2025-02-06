@@ -63,6 +63,7 @@ private:
     unsg_t rptInterval;
     unsg_t singularIndex;
     unsg_t dualIteration;
+    unsg_t primalIteration;
     DualLoopExitStatus dualExitStatus;
     PrimalLoopExitStatus primalExitStatus;
     double gamma;
@@ -74,6 +75,7 @@ private:
     double dualTolerance;
     double dualityGap;
     double cost;
+    bool cycling = false;
     CoreSettings settings;
     WorkSpace ws;
     std::unique_ptr<iTimer> timer;
