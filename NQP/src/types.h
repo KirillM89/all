@@ -94,9 +94,9 @@ struct CoreSettings {
     unsg_t logLevel = 3u;
     double nnlsResidNormFsb = 1.0e-16;
     double origPrimalFsb = 1.0e-6;
-    double nnlsPrimalZero = -1.0e-7; //-1.0e-7; //zp < 0 => zp < nnlsPrimalZero
+    double nnlsPrimalZero = 1.0e-30; //-1.0e-7; //zp < 0 => zp < nnlsPrimalZero
     double minNNLSDualTol = -1.0e-12;
-    double prLtZero = 1.0e-14;
+    double prLtZero = 1.0e-30;
     bool gammaUpdate = false;
     ActiveSetUpdateSettings actSetUpdtSettings;
 
@@ -117,7 +117,7 @@ struct UserSettings {
     int logLevel = 3;
 	double nnlsResidNormFsb = 1.0e-16;
 	double origPrimalFsb = 1.0e-6;
-	double nnlsPrimalZero = -1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero
+    double nnlsPrimalZero = 1.0e-30; //-1.0e-16; // -1.0e-12; //zp < 0 => zp < nnlsPrimalZero
 	double minNNLSDualTol = -1.0e-12;
 	std::string logFile = "logNNLS.txt";
 	bool checkProblem = false;

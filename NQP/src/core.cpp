@@ -167,7 +167,8 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     for (unsg_t i = 0; i < nEqConstraints; ++i) {
         ws.linEqConstraints.insert(i);
     }
-    ws.activeConstraints = ws.linEqConstraints;
+    //ws.activeConstraints = ws.linEqConstraints;
+
     ws.H = problem.H;
     ws.c = problem.c;
     ExtendJacobian(problem.A, problem.b, problem.lw, problem.up);
@@ -189,6 +190,9 @@ bool Core::PrepareNNLS(const DenseQPProblem &problem) {
     ScaleProblem();                        // ortogonalization of constraints and scaling
     TimeInterval(uCallback->initData.tM);
     SetLinearSolver();
+    for (auto indx :ws.linEqConstraints) {
+        AddToActiveSet(indx);
+    }
     return true;
 }
 void Core::TimeInterval(std::string& buf) {
@@ -237,7 +241,7 @@ bool Core::FullActiveSet() {
 }
 void Core::ComputeDualVariable() {
     Mult(ws.M, ws.MTY, ws.dual); // M * M_T * primal
-    for (unsg_t i = 0; i < nConstraints; ++i) {
+    for (unsg_t i = 0 ; i < nConstraints; ++i) {
         ws.dual[i] += styGamma * ws.s[i];
     }
     styGamma = gamma + DotProduct(ws.s, ws.primal);
@@ -298,7 +302,7 @@ unsg_t Core::SelectNewActiveComponent() {
     bool newFound = false;
     if (settings.actSetUpdtSettings.firstInactive) {
         // first check inactive components
-        for (unsg_t i = 0; i < nConstraints; ++i) {
+        for (unsg_t i = nEqConstraints; i < nConstraints; ++i) {
             if ((ws.activeConstraints.find(i) == ws.activeConstraints.end()) &&
                 IsCandidateForNewActive(i, newActive)) {
                 newActive = ws.dual[i];
@@ -339,6 +343,10 @@ unsg_t Core::SolvePrimal() {
     const std::size_t nActive = ws.activeConstraints.size();
     lSolver->SetGamma(gamma);
     const LinSolverOutput& output = lSolver->Solve();
+    assert(output.indices.size() == ws.activeConstraints.size());
+    for (auto indx : output.indices) {
+        assert(ws.activeConstraints.find(indx) != ws.activeConstraints.end());
+    }
     std::fill(ws.zp.begin(), ws.zp.end(), 0.0);
     if (!settings.actSetUpdtSettings.rejectSingular) {
         ws.negativeZp.clear();
@@ -346,7 +354,7 @@ unsg_t Core::SolvePrimal() {
         if (nActive > 0) {
             for (auto indx: output.indices) {
                 ws.zp[indx] = output.solution[i];
-                if (output.solution[i] < settings.nnlsPrimalZero) {
+                if (indx >= nEqConstraints && output.solution[i] <= settings.nnlsPrimalZero) {
                     ws.negativeZp.insert(indx);
                 }
                 ++i;
@@ -365,12 +373,14 @@ bool Core::MakeLineSearch() {
     bool stepFound = false;
     // case if all zp are non-negative must be proccessed before this function, negativePrimalIndices must not be empty
     for (auto indx: ws.negativeZp) {
-        if (!isSame(ws.primal[indx], 0.0)) {
-            double denominator = ws.primal[indx] - ws.zp[indx];
-            if (!isSame(denominator, 0.0)) {
-                minStep = std::fmin(minStep, std::fabs(ws.primal[indx] / denominator));
-                stepFound = true;
-            }
+        const double primal = ws.primal[indx];
+        bool cond = (primal > 0.0 && ws.zp[indx] < 0.0) || (isSame(primal, 0.0) && isSame(ws.zp[indx], 0.0));
+        std::cout << "dit: " << dualIteration << " pit:" << primalIteration << " x:" << primal << " y:" << ws.zp[indx] << std::endl;
+        //assert(cond);
+        double denominator = primal - ws.zp[indx];
+        if (!isSame(denominator, 0.0)) {
+            minStep = std::fmin(minStep, std::fabs(primal / denominator));
+            stepFound = true;
         }
     }
     if (stepFound) {
@@ -378,7 +388,7 @@ bool Core::MakeLineSearch() {
         gammaCorrection = 0.0;
         for (unsg_t i = 0; i < nConstraints; ++i) {
             ws.primal[i] += minStep * (ws.zp[i] - ws.primal[i]);
-            if (std::fabs(ws.primal[i]) < settings.prLtZero) {
+            if (ws.primal[i] <= settings.prLtZero) {
                 if (ws.activeConstraints.find(i) != ws.activeConstraints.end()) {
                     gammaCorrection += std::fabs(ws.s[i]);
                 }
@@ -444,6 +454,7 @@ void Core::UpdateGammaOnPrimalIteration() {
     if (settings.gammaUpdate == true) {
         gamma = std::fabs(gamma - gammaCorrection);
     }
+    return;
     if (cycling) {
         double corr = primalIteration % 2 == 0 ? primalIteration + 1 : 1.0 / primalIteration;
         gamma *= corr;
@@ -454,6 +465,7 @@ void Core::UpdateGammaOnDualIteration() {
     if (settings.gammaUpdate == true) {
         gamma += std::fabs(ws.s[newActiveIndex]);
     }
+    return;
     if (cycling) {
         double corr = dualIteration % 2 == 0 ? dualIteration : 1.0 / dualIteration;
         gamma *= corr;
@@ -480,13 +492,13 @@ void Core::ComputeExactLambdaOnActiveSet() {
     if (M.empty()) {
         return;
     }
-
-    //mmtb.Solve(M, s);
-    /*std::vector<double> solActiveSet = mmtb.GetSolution();
+    MMTbSolver mmtb;
+    mmtb.Solve(M, s);
+    std::vector<double> solActiveSet = mmtb.GetSolution();
     std::size_t ii = 0;
     for (auto i :ws.activeConstraints) {
         ws.lambda[i] = solActiveSet[ii++];
-    }*/
+    }
 }
 
 void Core::ComputeDualityGap() {
@@ -523,7 +535,7 @@ void Core::ComputeOrigSolution() {
     for (unsg_t i = 0; i < nConstraints; ++i) {
         ws.lambda[i] = lambdaTerm * ws.primal[i] ;
     }
-   // ComputeExactLambdaOnActiveSet();
+    //ComputeExactLambdaOnActiveSet();
     std::vector<double> u(nVariables, 0.0);
     MultTransp(ws.M, ws.lambda, ws.activeConstraints, u);
     std::vector<double> u_v(nVariables);
